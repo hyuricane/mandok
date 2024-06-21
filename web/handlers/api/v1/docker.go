@@ -203,16 +203,16 @@ func RestartContainer(c echo.Context) error {
 			log.Printf("[DEBUG] pull image %s response: %s -- %v", containers[0].Image, pullRespStr, err)
 		}
 		// update container with newly pulled image
-		workdir, ok := containers[0].Labels["com.docker.compose.project.working_dir"]
+		workdir, ok := workdirs[projectName]
+		if !ok {
+			workdir, ok = containers[0].Labels["com.docker.compose.project.working_dir"]
+		}
 		if !ok {
 			return c.JSON(200, map[string]string{
 				"project": projectName,
 				"name":    containerName,
 				"message": "not restarted",
 			})
-		}
-		if wd, ok := workdirs[projectName]; ok {
-			workdir = wd
 		}
 		cmd := exec.Command("docker-compose", "up", "-d", "--force-recreate", containerName)
 		cmd.Dir = workdir
