@@ -214,7 +214,19 @@ func RestartContainer(c echo.Context) error {
 				"message": "not restarted",
 			})
 		}
-		cmd := exec.Command("docker-compose", "up", "-d", "--force-recreate", containerName)
+		// docker compose command
+		dockerComposeCmdName := os.Getenv("DOCKER_COMPOSE_CMD_NAME")
+		if dockerComposeCmdName == "" {
+			dockerComposeCmdName = "docker-compose"
+		}
+		dockerComposeArgs := []string{"up", "-d", "--force-recreate", containerName}
+		dockerComposeCmdNames := strings.Split(dockerComposeCmdName, " ")
+		if len(dockerComposeCmdNames) > 0 {
+			dockerComposeCmdName = dockerComposeCmdNames[0]
+			dockerComposeArgs = append(dockerComposeCmdNames[1:], dockerComposeArgs...)
+		}
+		log.Printf("[DEBUG] cmd: %s %v", dockerComposeCmdName, dockerComposeArgs)
+		cmd := exec.Command(dockerComposeCmdName, dockerComposeArgs...)
 		cmd.Dir = workdir
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
