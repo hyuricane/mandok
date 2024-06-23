@@ -1,0 +1,12 @@
+[Unit]
+Description=Mandok service
+After=docker.service
+
+[Service]
+WorkingDirectory=/path/to/your/service/directory
+ExecStart=/path/to/your/service/executable
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
