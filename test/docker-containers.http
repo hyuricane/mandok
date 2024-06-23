@@ -1,0 +1,30 @@
+@host = http://localhost:{{$dotenv PORT}}/api/docker/containers
+@Auth=Basic {{$dotenv API_USERNAME}}:{{$dotenv API_PASSWORD}}
+
+### get all
+GET {{host}}
+Authorization: {{Auth}}
+
+### get in project
+GET {{host}}/invent
+Authorization: {{Auth}}
+
+### get container detail
+GET {{host}}/invent/mitra
+Authorization: {{Auth}}
+
+
+### update container compose file : in development
+PUT {{host}}/invent/mitra
+Authorization: {{Auth}}
+Content-Type: application/json
+
+{
+  "environment": {
+    "HULLA": "HOOPS"
+  }
+}
+
+
+
+

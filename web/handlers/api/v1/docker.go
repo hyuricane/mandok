@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/docker/docker/api/types"
@@ -18,6 +19,8 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
+	"gopkg.in/yaml.v3"
+	mTypes "inovasiriset.co.id/docker/manager/types"
 )
 
 var dockerCli *client.Client // docker client
@@ -79,6 +82,7 @@ func RouteDocker(group *echo.Group) {
 	group.GET("/containers", GetContainers)
 	group.GET("/containers/:project", GetContainers)
 	group.GET("/containers/:project/:container", DetailContainer)
+	group.PUT("/containers/:project/:container", UpdateContainer)
 	group.GET("/containers/:project/:container/restart", RestartContainer)
 }
 
@@ -163,6 +167,113 @@ func DetailContainer(c echo.Context) error {
 		"message":    "too many containers found",
 		"containers": containers,
 	})
+}
+
+func UpdateContainer(c echo.Context) error {
+	projectName := c.Param("project")
+	containerName := c.Param("container")
+
+	// find container
+	containers, err := getContainers(projectName, containerName)
+	if err != nil {
+		log.Printf("[ERROR] get containers error: %v", err)
+		return err
+	}
+	if len(containers) == 0 {
+		return c.JSON(200, map[string]string{
+			"message": "container not found",
+		})
+	}
+	if len(containers) > 1 {
+		return c.JSON(200, map[string]string{
+			"message": "too many containers found",
+		})
+	}
+
+	// read docker compose file in com.docker.compose.project.config_file
+	configFilePath, ok := containers[0].Labels["com.docker.compose.project.config_files"]
+	if !ok {
+		return c.JSON(200, map[string]string{
+			"message": "no config file found",
+		})
+	}
+	configFilePath = strings.TrimSpace(configFilePath)
+	if configFilePath == "" {
+		return c.JSON(200, map[string]string{
+			"message": "empty config file",
+		})
+	}
+
+	configFileBytes, err := os.ReadFile(configFilePath)
+	if err != nil {
+		log.Printf("[ERROR] read config file error: %v", err)
+		return err
+	}
+	projectConfig := mTypes.ProjectConfig{}
+	err = yaml.Unmarshal(configFileBytes, &projectConfig)
+	if err != nil {
+		log.Printf("[ERROR] unmarshal config file error: %v", err)
+		return err
+	}
+
+	// read service config from body
+	inputServiceConfig := mTypes.ServiceConfig{}
+	err = c.Bind(&inputServiceConfig)
+	if err != nil {
+		log.Printf("[ERROR] bind service config error: %v", err)
+		return err
+	}
+
+	serviceConfig, ok := projectConfig.Services[containers[0].Labels["com.docker.compose.service"]]
+	if !ok {
+		return c.JSON(200, map[string]string{
+			"message": "no service found",
+		})
+	}
+
+	// merge service config
+
+	log.Printf("[DEBUG] service config: %+v", serviceConfig)
+
+	// write to file
+	dir := filepath.Dir(configFilePath)
+	tempConfigFilePath := filepath.Join(dir, "mandok-"+filepath.Base(configFilePath))
+
+	tempProjectConfig := mTypes.ProjectConfig{
+		Services: make(map[string]mTypes.ServiceConfig),
+	}
+
+	// read if already exists
+	if _, err := os.Stat(tempConfigFilePath); err == nil {
+		// file exists
+		configFileBytes, err := os.ReadFile(tempConfigFilePath)
+		if err != nil {
+			log.Printf("[ERROR] read temp config file error: %v", err)
+			return err
+		}
+		err = yaml.Unmarshal(configFileBytes, &tempProjectConfig)
+		if err != nil {
+			log.Printf("[ERROR] unmarshal temp config file error: %v", err)
+			return err
+		}
+	}
+	tempProjectConfig.Services[containerName] = serviceConfig
+
+	log.Printf("[DEBUG] tempProjectConfig %+v", tempProjectConfig)
+
+	tempProjectConfigBytes, err := yaml.Marshal(tempProjectConfig)
+	if err != nil {
+		log.Printf("[ERROR] marshal service config error: %v", err)
+		return err
+	}
+	err = os.WriteFile(tempConfigFilePath, tempProjectConfigBytes, 0644)
+	if err != nil {
+		log.Printf("[ERROR] write service config error: %v", err)
+		return err
+	}
+
+	// restart container
+	return c.JSON(200, serviceConfig)
 }
 
 func RestartContainer(c echo.Context) error {
