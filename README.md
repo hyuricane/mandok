@@ -2,7 +2,6 @@
 
 Simple API to restart docker compose container
 
-
 ## Getting Started
 
 ### build
@@ -47,3 +46,18 @@ services:
       - ../myproject/:/usr/composes/myproject/
     ports:
       - "8080:80"
+```
+
+### notes
+
+only containers with `mandok=visible` labels is visible to this application
+
+this is docker-compose.yml example of managed containers:
+```yaml
+services:
+  myproject:
+    image: my.image.repo/images:latest
+    labels:
+      - "mandok=visible"
+```
+
