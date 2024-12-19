@@ -1,4 +1,4 @@
-@host = http://localhost:{{$dotenv PORT}}/api/compose/v2
+@host = http://localhost:{{$dotenv PORT}}/api/compose
 @Auth=Basic {{$dotenv API_USERNAME}}:{{$dotenv API_PASSWORD}}
 
 ### create project
@@ -34,8 +34,20 @@ Authorization: {{Auth}}
 DELETE {{host}}/hello
 Authorization: {{Auth}}
 
-### start project
-POST {{host}}/hello/start?service=webia
+### start project basic
+POST {{host}}/hello/start
+Authorization: {{Auth}}
+
+### start specific services in project
+POST {{host}}/hello/start?service=web
+Authorization: {{Auth}}
+
+### start force restart even without update
+POST {{host}}/hello/start?restart=true
+Authorization: {{Auth}}
+
+### start pull image and restart if new image pulled
+POST {{host}}/hello/start?pull=true
 Authorization: {{Auth}}
 
 ### stop project

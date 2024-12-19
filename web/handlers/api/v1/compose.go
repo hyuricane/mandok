@@ -14,7 +14,7 @@ import (
 
 const PROJECT_DIRS = "projects"
 
-func RouteComposeV2(group *echo.Group) {
+func RouteCompose(group *echo.Group) {
 	group.POST("/:name", createProject)
 	group.GET("/:name", getProject)
 	group.POST("/:name/start", startProject)

@@ -24,7 +24,7 @@ func ListenHttp() error {
 		return c.String(200, "Hello, World!")
 	})
 	apiHandlers.RouteDocker(app.Group("/api/docker", middlewares.BasicAuth()))
-	apiHandlers.RouteComposeV2(app.Group("/api/compose", middlewares.BasicAuth()))
+	apiHandlers.RouteCompose(app.Group("/api/compose", middlewares.BasicAuth()))
 
 	port := os.Getenv("PORT")
 	if port == "" {
