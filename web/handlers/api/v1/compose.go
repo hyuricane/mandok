@@ -32,6 +32,12 @@ type ComposeProjectYaml struct {
 	Networks map[string]interface{} `yaml:"networks,omitempty" json:"networks,omitempty"`
 }
 
+type RepoAuth struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Registry string `json:"registry"`
+}
+
 func createProject(c echo.Context) error {
 	// read yaml file
 	log.Printf("[DEBUG] create project %s", c.Param("name"))

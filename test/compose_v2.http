@@ -1,24 +1,17 @@
-@host = http://localhost:{{$dotenv PORT}}/api/compose
+@host = {{$dotenv BASE_URL}}/api/compose
 @Auth=Basic {{$dotenv API_USERNAME}}:{{$dotenv API_PASSWORD}}
 
 ### create project
-POST {{host}}/hello
+POST {{host}}/vadashboard
 Authorization: {{Auth}}
 Content-Type: application/json
 
 {
   "version": "3",
   "services": {
-    "web": {
-      "image": "nginx",
-      "ports": ["8082:8080"],
-      "labels": {
-        "mandok": "visible"
-      }
-    },
-    "webia": {
-      "image": "nginx",
-      "ports": ["127.0.0.1:8081:8080"],
+    "dashboard": {
+      "image": "registry.gitlab.com/inovasirisetindonesia/telkom-vadashboard/dashboard:development",
+      "ports": ["4000:80"],
       "labels": {
         "mandok": "visible"
       }
@@ -27,11 +20,11 @@ Content-Type: application/json
 }
 
 ### read project
-GET {{host}}/hello
+GET {{host}}/vadashboard
 Authorization: {{Auth}}
 
 ### read project status
-GET {{host}}/hello/status?all=true&service=web
+GET {{host}}/vadashboard/status?all=true
 Authorization: {{Auth}}
 
 ### delete project
@@ -39,7 +32,7 @@ DELETE {{host}}/hello
 Authorization: {{Auth}}
 
 ### start project basic
-POST {{host}}/hello/start
+POST {{host}}/vadashboard/start?pull=true
 Authorization: {{Auth}}
 
 ### start specific services in project

@@ -1,0 +1,17 @@
+@host = {{$dotenv BASE_URL}}/api/repo
+@Auth=Basic {{$dotenv API_USERNAME}}:{{$dotenv API_PASSWORD}}
+
+@registryHost={{$dotenv REGISTY_HOST}}
+@registryUser={{$dotenv REGISTY_USERNAME}}
+@registryPass={{$dotenv REGISTY_PASSWORD}}
+
+### repo login
+POST {{host}}/login
+Authorization: {{Auth}}
+Content-Type: application/json
+
+{
+  "registry": "{{registryHost}}",
+  "username": "{{registryUser}}",
+  "password": "{{registryPass}}"
+}

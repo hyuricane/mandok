@@ -1,4 +1,4 @@
-@host = http://localhost:{{$dotenv PORT}}/api/docker/containers
+@host = {{$dotenv BASE_URL}}/api/docker/containers
 @Auth=Basic {{$dotenv API_USERNAME}}:{{$dotenv API_PASSWORD}}
 
 ### get all
