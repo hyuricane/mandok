@@ -115,6 +115,7 @@ func getProject(c echo.Context) error {
 func startProject(c echo.Context) error {
 	name := c.Param("name")
 	restart := c.QueryParam("restart")
+	pull := c.QueryParam("pull")
 	projectDir := filepath.Join(PROJECT_DIRS, name)
 	if _, err := os.Stat(projectDir); os.IsNotExist(err) {
 		return c.JSON(404, map[string]string{
@@ -127,6 +128,9 @@ func startProject(c echo.Context) error {
 	commands := []string{"up", "-d"}
 	if restart == "true" {
 		commands = append(commands, "--force-recreate")
+	}
+	if pull == "true" {
+		commands = append(commands, "--pull", "always")
 	}
 
 	for k, v := range c.Request().URL.Query() {
