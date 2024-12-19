@@ -1,0 +1,70 @@
+@host = http://localhost:{{$dotenv PORT}}/api/compose/v2
+@Auth=Basic {{$dotenv API_USERNAME}}:{{$dotenv API_PASSWORD}}
+
+### create project
+POST {{host}}/hello
+Authorization: {{Auth}}
+Content-Type: application/json
+
+{
+  "version": "3",
+  "services": {
+    "web": {
+      "image": "nginx",
+      "ports": ["8082:8080"],
+      "labels": {
+        "mandok": "visible"
+      }
+    },
+    "webia": {
+      "image": "nginx",
+      "ports": ["127.0.0.1:8081:8080"],
+      "labels": {
+        "mandok": "visible"
+      }
+    }
+  }
+}
+
+### read project
+GET {{host}}/hello
+Authorization: {{Auth}}
+
+### delete project
+DELETE {{host}}/hello
+Authorization: {{Auth}}
+
+### start project
+POST {{host}}/hello/start?service=webia
+Authorization: {{Auth}}
+
+### stop project
+POST {{host}}/hello/stop
+Authorization: {{Auth}}
+
+### get services
+GET {{host}}/simple/service
+Authorization: {{Auth}}
+
+### create service
+POST {{host}}/simple/service
+Authorization: {{Auth}}
+Content-Type: application/json
+
+{
+  "name": "webapp",
+  "image": "nginx",
+  "labels": {
+    "mandok": "visible"
+  }
+}
+
+### action
+PUT {{host}}/simple/action
+Authorization: {{Auth}}
+Content-Type: application/json
+
+{
+  "action": "down",
+  "services": []
+}

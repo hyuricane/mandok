@@ -9,6 +9,5 @@ import (
 
 func main() {
 	godotenv.Load()
-
 	log.Fatal(web.ListenHttp())
 }

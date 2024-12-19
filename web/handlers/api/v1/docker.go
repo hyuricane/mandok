@@ -7,24 +7,24 @@ import (
 	"io"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/client"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
+	"github.com/portainer/libcompose/docker"
+	"github.com/portainer/libcompose/docker/ctx"
+	"github.com/portainer/libcompose/project"
+	"github.com/portainer/libcompose/project/options"
 	"gopkg.in/yaml.v3"
 	mTypes "inovasiriset.co.id/docker/manager/types"
 )
 
 var dockerCli *client.Client // docker client
-var registryAuths map[string]registry.AuthConfig
+var registryAuths map[string]string
 var workdirs map[string]string
 
 func init() {
@@ -36,7 +36,7 @@ func init() {
 	}
 	dockerCli = cli
 	log.Printf("[DEBUG] docker client initialized")
-	registryAuths = map[string]registry.AuthConfig{}
+	registryAuths = map[string]string{}
 	if regauthstr := os.Getenv("REGISTRY_AUTHS"); regauthstr != "" {
 		regauths := strings.Split(regauthstr, ",")
 		for _, auth := range regauths {
@@ -52,10 +52,15 @@ func init() {
 			if i == -1 {
 				continue
 			}
-			registryAuths[segments[1]] = registry.AuthConfig{
-				Username: segments[0][:i],
-				Password: segments[0][i+1:],
+			encodedJSON, err := json.Marshal(map[string]string{
+				"username": segments[0][:i],
+				"password": segments[0][i+1:],
+			})
+			if err != nil {
+				continue
 			}
+			regauth := base64.URLEncoding.EncodeToString(encodedJSON)
+			registryAuths[segments[1]] = regauth
 		}
 	}
 	workdirs = map[string]string{}
@@ -143,14 +148,14 @@ func DetailContainer(c echo.Context) error {
 		})
 	}
 	if len(containers) == 1 {
-		rpid, err := dockerCli.ContainerExecCreate(context.TODO(), containers[0].ID, container.ExecOptions{
+		rpid, err := dockerCli.ContainerExecCreate(context.TODO(), containers[0].ID, types.ExecConfig{
 			Cmd: []string{"printenv"},
 		})
 		if err != nil {
 			log.Printf("[ERROR] exec error: %v", err)
 			return err
 		}
-		rp, err := dockerCli.ContainerExecAttach(context.TODO(), rpid.ID, container.ExecStartOptions{})
+		rp, err := dockerCli.ContainerExecAttach(context.TODO(), rpid.ID, types.ExecStartCheck{})
 		if err != nil {
 			log.Printf("[ERROR] attach error: %v", err)
 			return err
@@ -293,27 +298,6 @@ func RestartContainer(c echo.Context) error {
 	}
 
 	if len(containers) == 1 {
-		regauth := ""
-		for k, v := range registryAuths {
-			if strings.HasPrefix(containers[0].Image, k) {
-				log.Printf("[DEBUG] use registry auth %s", k)
-				encodedJSON, err := json.Marshal(v)
-				if err != nil {
-					return err
-				}
-				regauth = base64.URLEncoding.EncodeToString(encodedJSON)
-				break
-			}
-		}
-		pullResp, err := dockerCli.ImagePull(context.TODO(), containers[0].Image, image.PullOptions{RegistryAuth: regauth})
-		if err != nil {
-			log.Printf("[DEBUG] pull image %s error:  %v", containers[0].Image, err)
-		} else {
-			defer pullResp.Close()
-			pullRespStr, err := io.ReadAll(pullResp)
-			log.Printf("[DEBUG] pull image %s response: %s -- %v", containers[0].Image, pullRespStr, err)
-		}
-		// update container with newly pulled image
 		workdir, ok := workdirs[projectName]
 		if !ok {
 			workdir, ok = containers[0].Labels["com.docker.compose.project.working_dir"]
@@ -326,22 +310,7 @@ func RestartContainer(c echo.Context) error {
 			})
 		}
 		// docker compose command
-		dockerComposeCmdName := os.Getenv("DOCKER_COMPOSE_CMD_NAME")
-		if dockerComposeCmdName == "" {
-			dockerComposeCmdName = "docker-compose"
-		}
-		dockerComposeArgs := []string{"up", "-d", "--force-recreate", containerName}
-		dockerComposeCmdNames := strings.Split(dockerComposeCmdName, " ")
-		if len(dockerComposeCmdNames) > 0 {
-			dockerComposeCmdName = dockerComposeCmdNames[0]
-			dockerComposeArgs = append(dockerComposeCmdNames[1:], dockerComposeArgs...)
-		}
-		log.Printf("[DEBUG] cmd: %s %v", dockerComposeCmdName, dockerComposeArgs)
-		cmd := exec.Command(dockerComposeCmdName, dockerComposeArgs...)
-		cmd.Dir = workdir
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		err = cmd.Run()
+		err = restartContainer(workdir, containerName, strings.Split(containers[0].Labels["com.docker.compose.project.config_files"], ",")...)
 		if err != nil {
 			log.Printf("[ERROR] restart container error: %v", err)
 			return err
@@ -374,5 +343,29 @@ func getContainers(projectName string, containerName string) ([]types.Container,
 			listFilters.Add("label", "com.docker.compose.service="+containerName)
 		}
 	}
-	return dockerCli.ContainerList(context.TODO(), container.ListOptions{Filters: listFilters})
+	return dockerCli.ContainerList(context.TODO(), types.ContainerListOptions{Filters: listFilters})
+}
+
+func restartContainer(workdir string, containerName string, configFiles ...string) error {
+	projectApi, err := docker.NewProject(&ctx.Context{
+		ConfigDir: workdir,
+		Context: project.Context{
+			ComposeFiles: configFiles,
+			ProjectName:  filepath.Base(workdir),
+		},
+	}, nil)
+	if err != nil {
+		return err
+	}
+	ymlstr, err := projectApi.Config()
+	if err != nil {
+		return err
+	}
+	log.Printf("[DEBUG] project yml %s", ymlstr)
+	err = projectApi.Pull(context.TODO(), containerName)
+	if err != nil {
+		return err
+	}
+	err = projectApi.Up(context.TODO(), options.Up{}, containerName)
+	return err
 }

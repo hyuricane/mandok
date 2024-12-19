@@ -13,10 +13,18 @@ func ListenHttp() error {
 	app := echo.New()
 	app.HideBanner = true
 	app.Use(middleware.Recover())
+	app.HTTPErrorHandler = func(err error, c echo.Context) {
+		if c.Response().Committed {
+			return
+		}
+		c.Logger().Error(err)
+		c.Echo().DefaultHTTPErrorHandler(err, c)
+	}
 	app.GET("/", func(c echo.Context) error {
 		return c.String(200, "Hello, World!")
 	})
 	apiHandlers.RouteDocker(app.Group("/api/docker", middlewares.BasicAuth()))
+	apiHandlers.RouteComposeV2(app.Group("/api/compose", middlewares.BasicAuth()))
 
 	port := os.Getenv("PORT")
 	if port == "" {
