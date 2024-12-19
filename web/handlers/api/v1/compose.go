@@ -2,11 +2,13 @@ package v1
 
 import (
 	"bytes"
+	"encoding/json"
 	"log"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 	"gopkg.in/yaml.v3"
@@ -17,6 +19,7 @@ const PROJECT_DIRS = "projects"
 func RouteCompose(group *echo.Group) {
 	group.POST("/:name", createProject)
 	group.GET("/:name", getProject)
+	group.GET("/:name/status", getStatus)
 	group.POST("/:name/start", startProject)
 	group.POST("/:name/stop", stopProject)
 	group.DELETE("/:name", deleteProject)
@@ -101,7 +104,6 @@ func getProject(c echo.Context) error {
 		})
 	}
 	prj := map[string]interface{}{}
-	log.Printf("[DEBUG] %s", buff.String())
 	err = yaml.NewDecoder(buff).Decode(&prj)
 	if err != nil {
 		return c.JSON(500, map[string]string{
@@ -110,6 +112,73 @@ func getProject(c echo.Context) error {
 	}
 	log.Printf("[DEBUG] prj %+v", prj)
 	return c.JSON(200, prj)
+}
+
+type ExpectedPSData struct {
+	Service    string `json:"Service"`
+	CreatedAt  string `json:"CreatedAt"`
+	Image      string `json:"Image"`
+	Status     string `json:"Status"`
+	State      string `json:"State"`
+	Size       string `json:"Size"`
+	RunningFor string `json:"RunningFor"`
+	ExitCode   int    `json:"ExitCode"`
+}
+
+func getStatus(c echo.Context) error {
+	name := c.Param("name")
+	all := c.QueryParam("all")
+	projectDir := filepath.Join(PROJECT_DIRS, name)
+	if _, err := os.Stat(projectDir); os.IsNotExist(err) {
+		return c.JSON(404, map[string]string{
+			"message": "project not found",
+		})
+	}
+	// go to project directory and trigger docker compose ps
+	commands := []string{"ps", "--format", "json"}
+	if all == "true" {
+		commands = append(commands, "-a")
+	}
+
+	for k, v := range c.Request().URL.Query() {
+		// keys = append(keys, k)
+		if k == "service" {
+			commands = append(commands, v...)
+			continue
+		}
+	}
+
+	cmd := exec.Command("docker-compose", commands...)
+	cmd.Dir = projectDir
+	// read from cmd output
+	buff := bytes.NewBuffer([]byte{})
+	cmd.Stdout = buff
+	cmd.Stderr = os.Stderr
+
+	err := cmd.Run()
+	if err != nil {
+		return c.JSON(500, map[string]string{
+			"message": err.Error(),
+		})
+	}
+	outputStrs := strings.Split(buff.String(), "\n")
+	services := map[string]ExpectedPSData{}
+	for _, outputStr := range outputStrs {
+		if outputStr == "" {
+			continue
+		}
+		psData := ExpectedPSData{}
+		if err := json.Unmarshal([]byte(outputStr), &psData); err != nil {
+			return c.JSON(500, map[string]string{
+				"message": err.Error(),
+				"txt":     outputStr,
+			})
+		}
+		services[psData.Service] = psData
+	}
+	return c.JSON(200, map[string]interface{}{
+		"services": services,
+	})
 }
 
 func startProject(c echo.Context) error {

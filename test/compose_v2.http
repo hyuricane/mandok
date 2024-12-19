@@ -30,6 +30,10 @@ Content-Type: application/json
 GET {{host}}/hello
 Authorization: {{Auth}}
 
+### read project status
+GET {{host}}/hello/status?all=true&service=web
+Authorization: {{Auth}}
+
 ### delete project
 DELETE {{host}}/hello
 Authorization: {{Auth}}
