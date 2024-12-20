@@ -11,6 +11,12 @@ func RouteRepo(group *echo.Group) {
 	group.POST("/login", login)
 }
 
+type RepoAuth struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Registry string `json:"registry"`
+}
+
 func login(c echo.Context) error {
 	// login to repo
 	auth := RepoAuth{}

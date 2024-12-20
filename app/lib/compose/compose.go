@@ -1,0 +1,272 @@
+package compose
+
+import (
+	"bytes"
+	"encoding/json"
+	"errors"
+	"log"
+	"os"
+	"os/exec"
+	"path"
+	"path/filepath"
+	"strings"
+
+	"gopkg.in/yaml.v3"
+)
+
+type ComposeProjectYaml struct {
+	Version  string                 `yaml:"version,omitempty" json:"version,omitempty"`
+	Services map[string]interface{} `yaml:"services" json:"services"`
+	Volumes  map[string]interface{} `yaml:"volumes,omitempty" json:"volumes,omitempty"`
+	Networks map[string]interface{} `yaml:"networks,omitempty" json:"networks,omitempty"`
+}
+
+type RepoAuth struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Registry string `json:"registry"`
+}
+
+type ExpectedPSData struct {
+	Service    string `json:"Service"`
+	CreatedAt  string `json:"CreatedAt"`
+	Image      string `json:"Image"`
+	Status     string `json:"Status"`
+	State      string `json:"State"`
+	Size       string `json:"Size"`
+	RunningFor string `json:"RunningFor"`
+	ExitCode   int    `json:"ExitCode"`
+}
+
+type ComposeError struct {
+	s []string `json:"error"`
+}
+
+func (err ComposeError) Error() string {
+	return strings.Join(err.s, "\n")
+}
+
+func NewComposeError(buffErr *bytes.Buffer) *ComposeError {
+	str := buffErr.String()
+	if str == "" {
+		return nil
+	}
+	strs := strings.Split(str, "\n")
+	cleanstrs := []string{}
+	for _, s := range strs {
+		if s == "" {
+			continue
+		}
+		if strings.Contains(s, "level=warning") {
+			continue
+		}
+		cleanstrs = append(cleanstrs, s)
+	}
+	if len(cleanstrs) > 0 {
+		return &ComposeError{s: cleanstrs}
+	}
+	return nil
+}
+
+const PROJECT_DIRS = "projects"
+
+func CreateProject(name string, projectConfig ComposeProjectYaml) error {
+	if name == "" {
+		return nil
+	}
+
+	if projectConfig.Services == nil {
+		projectConfig.Services = map[string]interface{}{}
+	}
+	// create dir
+	projectPath := path.Join(PROJECT_DIRS, name)
+	err := os.MkdirAll(projectPath, 0755)
+	if err != nil {
+		return err
+	}
+	// create docker-compose.yml
+	composeFilePath := filepath.Join(projectPath, "docker-compose-tmp.yml")
+	file, err := os.OpenFile(composeFilePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	// write yaml file, replace existing
+	enc := yaml.NewEncoder(file)
+	enc.SetIndent(2)
+	err = enc.Encode(projectConfig)
+	if err != nil {
+		return err
+	}
+	err = TryProject(projectPath, "docker-compose-tmp.yml")
+	if err != nil {
+		return err
+	}
+	// move docker-compose-tmp.yml to docker-compose.yml
+	err = os.Rename(composeFilePath, filepath.Join(projectPath, "docker-compose.yml"))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func HasProject(name string) string {
+	projectPath := path.Join(PROJECT_DIRS, name)
+	projectDir := filepath.Join(PROJECT_DIRS, name)
+	if _, err := os.Stat(projectDir); os.IsNotExist(err) {
+		return ""
+	} else if err != nil {
+		log.Printf("[ERROR] hasProject %v", err)
+		return ""
+	}
+	return projectPath
+}
+
+func GetProject(projectDir string) (*ComposeProjectYaml, error) {
+	// go to project directory and trigger docker compose up
+	cmd := exec.Command("docker-compose", "config")
+	cmd.Dir = projectDir
+	// read from cmd output
+	buff := bytes.NewBuffer([]byte{})
+	errBuff := bytes.NewBuffer([]byte{})
+	cmd.Stdout = buff
+	cmd.Stderr = errBuff
+	err := cmd.Run()
+	if err != nil {
+		return nil, err
+	}
+	prj := ComposeProjectYaml{}
+	err = yaml.NewDecoder(buff).Decode(&prj)
+	if err != nil {
+		if errBuff.String() != "" {
+			return nil, errors.New(errBuff.String())
+		}
+		return nil, err
+	}
+	return &prj, nil
+}
+
+func GetStatus(projectDir string, all bool, services ...string) (map[string]ExpectedPSData, error) {
+	args := []string{"ps", "--format", "json"}
+	if all {
+		args = append(args, "-a")
+	}
+	args = append(args, services...)
+	cmd := exec.Command("docker-compose", args...)
+	cmd.Dir = projectDir
+
+	buff := bytes.NewBuffer([]byte{})
+	buffErr := bytes.NewBuffer([]byte{})
+	cmd.Stdout = buff
+	cmd.Stderr = buffErr
+
+	err := cmd.Run()
+	if err != nil {
+		if cErr := NewComposeError(buffErr); cErr != nil {
+			return nil, cErr
+		}
+		return nil, err
+	}
+	outputStrs := strings.Split(buff.String(), "\n")
+	retval := map[string]ExpectedPSData{}
+	for _, outputStr := range outputStrs {
+		if outputStr == "" {
+			continue
+		}
+		psData := ExpectedPSData{}
+		if err := json.Unmarshal([]byte(outputStr), &psData); err != nil {
+			return nil, err
+		}
+		retval[psData.Service] = psData
+	}
+	return retval, nil
+}
+
+func StartProject(projectDir string, restart bool, pull bool, service ...string) error {
+	args := []string{"up", "-d"}
+	if restart {
+		args = append(args, "--force-recreate")
+	}
+	if pull {
+		args = append(args, "--pull", "always")
+	}
+	args = append(args, service...)
+	cmd := exec.Command("docker-compose", args...)
+	cmd.Dir = projectDir
+
+	buff := bytes.NewBuffer([]byte{})
+	buffErr := bytes.NewBuffer([]byte{})
+	cmd.Stdout = buff
+	cmd.Stderr = buffErr
+
+	if err := cmd.Run(); err != nil {
+		if cErr := NewComposeError(buffErr); cErr != nil {
+			return cErr
+		}
+		return err
+	}
+	return nil
+}
+
+func StopProject(projectDir string, service ...string) error {
+	args := []string{"stop"}
+	args = append(args, service...)
+	cmd := exec.Command("docker-compose", args...)
+	cmd.Dir = projectDir
+
+	buff := bytes.NewBuffer([]byte{})
+	buffErr := bytes.NewBuffer([]byte{})
+	cmd.Stdout = buff
+	cmd.Stderr = buffErr
+
+	if err := cmd.Run(); err != nil {
+		if cErr := NewComposeError(buffErr); cErr != nil {
+			return cErr
+		}
+
+		return err
+	}
+	return nil
+}
+
+func DownProject(projectDir string) error {
+	cmd := exec.Command("docker-compose", "down")
+	cmd.Dir = projectDir
+
+	buff := bytes.NewBuffer([]byte{})
+	buffErr := bytes.NewBuffer([]byte{})
+	cmd.Stdout = buff
+	cmd.Stderr = buffErr
+
+	if err := cmd.Run(); err != nil {
+		if cErr := NewComposeError(buffErr); cErr != nil {
+			return cErr
+		}
+		return err
+	}
+	return nil
+}
+
+// dry run docker compose up
+func TryProject(projectDir string, configFileName string) error {
+	args := []string{"--dry-run"}
+	if configFileName != "" {
+		args = append(args, "-f", configFileName)
+	}
+	args = append(args, "up", "-d")
+	cmd := exec.Command("docker-compose", args...)
+	cmd.Dir = projectDir
+
+	buff := bytes.NewBuffer([]byte{})
+	buffErr := bytes.NewBuffer([]byte{})
+	cmd.Stdout = buff
+	cmd.Stderr = buffErr
+
+	if err := cmd.Run(); err != nil {
+		if cErr := NewComposeError(buffErr); cErr != nil {
+			return cErr
+		}
+		return err
+	}
+	return nil
+}

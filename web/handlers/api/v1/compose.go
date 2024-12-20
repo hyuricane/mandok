@@ -1,17 +1,10 @@
 package v1
 
 import (
-	"bytes"
-	"encoding/json"
 	"log"
-	"os"
-	"os/exec"
-	"path"
-	"path/filepath"
-	"strings"
 
 	"github.com/labstack/echo/v4"
-	"gopkg.in/yaml.v3"
+	"inovasiriset.co.id/docker/manager/app/lib/compose"
 )
 
 const PROJECT_DIRS = "projects"
@@ -25,60 +18,20 @@ func RouteCompose(group *echo.Group) {
 	group.DELETE("/:name", deleteProject)
 }
 
-type ComposeProjectYaml struct {
-	Version  string                 `yaml:"version,omitempty" json:"version,omitempty"`
-	Services map[string]interface{} `yaml:"services" json:"services"`
-	Volumes  map[string]interface{} `yaml:"volumes,omitempty" json:"volumes,omitempty"`
-	Networks map[string]interface{} `yaml:"networks,omitempty" json:"networks,omitempty"`
-}
-
-type RepoAuth struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Registry string `json:"registry"`
-}
-
 func createProject(c echo.Context) error {
 	// read yaml file
 	log.Printf("[DEBUG] create project %s", c.Param("name"))
 	name := c.Param("name")
-	body := ComposeProjectYaml{}
+	body := compose.ComposeProjectYaml{}
 	err := c.Bind(&body)
 	if err != nil {
 		return c.JSON(400, map[string]string{
 			"message": err.Error(),
 		})
 	}
-	if body.Services == nil {
-		body.Services = map[string]interface{}{}
-	}
-
-	projectPath := path.Join(PROJECT_DIRS, name)
-
-	// create dir
-	err = os.MkdirAll(projectPath, 0755)
+	err = compose.CreateProject(name, body)
 	if err != nil {
 		return c.JSON(500, map[string]string{
-			"message": err.Error(),
-		})
-	}
-	// create docker-compose.yml
-	composeFilePath := filepath.Join(projectPath, "docker-compose.yml")
-	file, err := os.OpenFile(composeFilePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
-	if err != nil {
-		return c.JSON(500, map[string]string{
-			"when":    "create docker-compose.yml",
-			"message": err.Error(),
-		})
-	}
-	defer file.Close()
-	// write yaml file, replace existing
-	enc := yaml.NewEncoder(file)
-	enc.SetIndent(2)
-	err = enc.Encode(body)
-	if err != nil {
-		return c.JSON(500, map[string]string{
-			"when":    "write docker-compose.yml",
 			"message": err.Error(),
 		})
 	}
@@ -90,34 +43,19 @@ func createProject(c echo.Context) error {
 
 func getProject(c echo.Context) error {
 	name := c.Param("name")
-	projectDir := filepath.Join(PROJECT_DIRS, name)
-	if _, err := os.Stat(projectDir); os.IsNotExist(err) {
+	projectDir := compose.HasProject(name)
+	if projectDir == "" {
 		return c.JSON(404, map[string]string{
 			"message": "project not found",
 		})
 	}
-	// go to project directory and trigger docker compose up
-	cmd := exec.Command("docker-compose", "config")
-	cmd.Dir = projectDir
-	// read from cmd output
-	buff := bytes.NewBuffer([]byte{})
-	cmd.Stdout = buff
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
+	project, err := compose.GetProject(projectDir)
 	if err != nil {
 		return c.JSON(500, map[string]string{
 			"message": err.Error(),
 		})
 	}
-	prj := map[string]interface{}{}
-	err = yaml.NewDecoder(buff).Decode(&prj)
-	if err != nil {
-		return c.JSON(500, map[string]string{
-			"message": err.Error(),
-		})
-	}
-	log.Printf("[DEBUG] prj %+v", prj)
-	return c.JSON(200, prj)
+	return c.JSON(200, project)
 }
 
 type ExpectedPSData struct {
@@ -133,57 +71,29 @@ type ExpectedPSData struct {
 
 func getStatus(c echo.Context) error {
 	name := c.Param("name")
-	all := c.QueryParam("all")
-	projectDir := filepath.Join(PROJECT_DIRS, name)
-	if _, err := os.Stat(projectDir); os.IsNotExist(err) {
+	projectDir := compose.HasProject(name)
+	if projectDir == "" {
 		return c.JSON(404, map[string]string{
 			"message": "project not found",
 		})
 	}
-	// go to project directory and trigger docker compose ps
-	commands := []string{"ps", "--format", "json"}
-	if all == "true" {
-		commands = append(commands, "-a")
-	}
-
+	all := c.QueryParam("all")
+	services := []string{}
 	for k, v := range c.Request().URL.Query() {
 		// keys = append(keys, k)
 		if k == "service" {
-			commands = append(commands, v...)
+			services = append(services, v...)
 			continue
 		}
 	}
-
-	cmd := exec.Command("docker-compose", commands...)
-	cmd.Dir = projectDir
-	// read from cmd output
-	buff := bytes.NewBuffer([]byte{})
-	cmd.Stdout = buff
-	cmd.Stderr = os.Stderr
-
-	err := cmd.Run()
+	status, err := compose.GetStatus(projectDir, all == "true", services...)
 	if err != nil {
 		return c.JSON(500, map[string]string{
 			"message": err.Error(),
 		})
 	}
-	outputStrs := strings.Split(buff.String(), "\n")
-	services := map[string]ExpectedPSData{}
-	for _, outputStr := range outputStrs {
-		if outputStr == "" {
-			continue
-		}
-		psData := ExpectedPSData{}
-		if err := json.Unmarshal([]byte(outputStr), &psData); err != nil {
-			return c.JSON(500, map[string]string{
-				"message": err.Error(),
-				"txt":     outputStr,
-			})
-		}
-		services[psData.Service] = psData
-	}
 	return c.JSON(200, map[string]interface{}{
-		"services": services,
+		"services": status,
 	})
 }
 
@@ -191,35 +101,22 @@ func startProject(c echo.Context) error {
 	name := c.Param("name")
 	restart := c.QueryParam("restart")
 	pull := c.QueryParam("pull")
-	projectDir := filepath.Join(PROJECT_DIRS, name)
-	if _, err := os.Stat(projectDir); os.IsNotExist(err) {
+	services := []string{}
+	for k, v := range c.Request().URL.Query() {
+		// keys = append(keys, k)
+		if k == "service" {
+			services = append(services, v...)
+			continue
+		}
+	}
+	projectDir := compose.HasProject(name)
+	if projectDir == "" {
 		return c.JSON(404, map[string]string{
 			"message": "project not found",
 		})
 	}
 
-	// go to project directory and trigger docker compose up
-	var cmd *exec.Cmd
-	commands := []string{"up", "-d"}
-	if restart == "true" {
-		commands = append(commands, "--force-recreate")
-	}
-	if pull == "true" {
-		commands = append(commands, "--pull", "always")
-	}
-
-	for k, v := range c.Request().URL.Query() {
-		// keys = append(keys, k)
-		if k == "service" {
-			commands = append(commands, v...)
-			continue
-		}
-	}
-	cmd = exec.Command("docker-compose", commands...)
-	cmd.Dir = projectDir
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
+	err := compose.StartProject(projectDir, restart == "true", pull == "true", services...)
 	if err != nil {
 		return c.JSON(500, map[string]string{
 			"message": err.Error(),
@@ -232,29 +129,22 @@ func startProject(c echo.Context) error {
 
 func stopProject(c echo.Context) error {
 	name := c.Param("name")
-	projectDir := filepath.Join(name)
-	if _, err := os.Stat(projectDir); os.IsNotExist(err) {
+	services := []string{}
+	for k, v := range c.Request().URL.Query() {
+		// keys = append(keys, k)
+		if k == "service" {
+			services = append(services, v...)
+			continue
+		}
+	}
+	projectDir := compose.HasProject(name)
+	if projectDir == "" {
 		return c.JSON(404, map[string]string{
 			"message": "project not found",
 		})
 	}
 
-	commands := []string{"stop"}
-	for k, v := range c.Request().URL.Query() {
-		// keys = append(keys, k)
-		if k == "service" {
-			commands = append(commands, v...)
-			continue
-		}
-	}
-
-	// go to project directory and trigger docker compose up
-	cmd := exec.Command("docker-compose", commands...)
-
-	cmd.Dir = projectDir
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
+	err := compose.StopProject(projectDir, services...)
 	if err != nil {
 		return c.JSON(500, map[string]string{
 			"message": err.Error(),
@@ -267,19 +157,13 @@ func stopProject(c echo.Context) error {
 
 func deleteProject(c echo.Context) error {
 	name := c.Param("name")
-	projectDir := filepath.Join(PROJECT_DIRS, name)
-	if _, err := os.Stat(projectDir); os.IsNotExist(err) {
+	projectDir := compose.HasProject(name)
+	if projectDir == "" {
 		return c.JSON(404, map[string]string{
 			"message": "project not found",
 		})
 	}
-
-	// go to project directory and trigger docker compose up
-	cmd := exec.Command("docker-compose", "down")
-	cmd.Dir = projectDir
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
+	err := compose.DownProject(projectDir)
 	if err != nil {
 		return c.JSON(500, map[string]string{
 			"message": err.Error(),
