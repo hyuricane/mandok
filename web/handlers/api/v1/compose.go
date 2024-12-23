@@ -29,7 +29,7 @@ func createProject(c echo.Context) error {
 			"message": err.Error(),
 		})
 	}
-	err = compose.CreateProject(name, body)
+	_, err = compose.CreateProject(name, body)
 	if err != nil {
 		return c.JSON(500, map[string]string{
 			"message": err.Error(),

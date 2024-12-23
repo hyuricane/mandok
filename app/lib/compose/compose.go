@@ -39,7 +39,7 @@ type ExpectedPSData struct {
 }
 
 type ComposeError struct {
-	s []string `json:"error"`
+	s []string
 }
 
 func (err ComposeError) Error() string {
@@ -70,9 +70,9 @@ func NewComposeError(buffErr *bytes.Buffer) *ComposeError {
 
 const PROJECT_DIRS = "projects"
 
-func CreateProject(name string, projectConfig ComposeProjectYaml) error {
+func CreateProject(name string, projectConfig ComposeProjectYaml) (string, error) {
 	if name == "" {
-		return nil
+		return "", nil
 	}
 
 	if projectConfig.Services == nil {
@@ -82,13 +82,13 @@ func CreateProject(name string, projectConfig ComposeProjectYaml) error {
 	projectPath := path.Join(PROJECT_DIRS, name)
 	err := os.MkdirAll(projectPath, 0755)
 	if err != nil {
-		return err
+		return "", err
 	}
 	// create docker-compose.yml
 	composeFilePath := filepath.Join(projectPath, "docker-compose-tmp.yml")
 	file, err := os.OpenFile(composeFilePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer file.Close()
 	// write yaml file, replace existing
@@ -96,18 +96,18 @@ func CreateProject(name string, projectConfig ComposeProjectYaml) error {
 	enc.SetIndent(2)
 	err = enc.Encode(projectConfig)
 	if err != nil {
-		return err
+		return "", err
 	}
 	err = TryProject(projectPath, "docker-compose-tmp.yml")
 	if err != nil {
-		return err
+		return "", err
 	}
 	// move docker-compose-tmp.yml to docker-compose.yml
 	err = os.Rename(composeFilePath, filepath.Join(projectPath, "docker-compose.yml"))
 	if err != nil {
-		return err
+		return "", err
 	}
-	return nil
+	return projectPath, nil
 }
 
 func HasProject(name string) string {
