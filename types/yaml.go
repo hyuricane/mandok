@@ -43,7 +43,6 @@ func (m *MapButArray) UnmarshalYAML(val *yaml.Node) error {
 		for i := 0; i < len(val.Content); i += 2 {
 			k := val.Content[i].Value
 			v := val.Content[i+1].Value
-			// log.Printf("[DEBUG] key: %v, value: %v from map", k, v)
 			m.m[k] = v
 		}
 	} else if val.Tag == "!!seq" {
@@ -54,7 +53,6 @@ func (m *MapButArray) UnmarshalYAML(val *yaml.Node) error {
 			if len(vals) > 1 {
 				v = vals[1]
 			}
-			// log.Printf("[DEBUG] key: %v, value: %v from array", k, v)
 			m.m[k] = v
 		}
 	}
