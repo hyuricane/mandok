@@ -125,7 +125,7 @@ func HasProject(name string) string {
 
 func GetProject(projectDir string) (*ComposeProjectYaml, error) {
 	// go to project directory and trigger docker compose up
-	cmd := exec.Command("docker-compose", "config", "--format", "json")
+	cmd := exec.Command("docker-compose", "--env-file", "masked.env", "config", "--format", "json")
 	cmd.Dir = projectDir
 	// read from cmd output
 	buff := bytes.NewBuffer([]byte{})
@@ -410,6 +410,83 @@ func TryProject(projectDir string, configFileName string) error {
 		if cErr := NewComposeError(buffErr); cErr != nil {
 			return cErr
 		}
+		return err
+	}
+	return nil
+}
+
+func ReadEnvFile(projectDir string, masked bool) (plain map[string]string, secret map[string]string, err error) {
+	fileName := ".env"
+	if masked {
+		fileName = "masked.env"
+	}
+	payload, err := os.ReadFile(filepath.Join(projectDir, fileName))
+	plain = map[string]string{}
+	secret = map[string]string{}
+	if err != nil {
+		if os.IsNotExist(err) {
+			return plain, secret, nil
+		}
+		return nil, nil, err
+	}
+	lines := bytes.Split(payload, []byte("\n"))
+	isPlain := true
+	for _, line := range lines {
+		if len(line) == 0 {
+			continue
+		}
+		if string(line) == "### secret" {
+			isPlain = false
+			continue
+		}
+		if isPlain {
+			parts := bytes.Split(line, []byte("="))
+			if len(parts) != 2 {
+				continue
+			}
+			plain[string(parts[0])] = string(parts[1])
+		} else {
+			parts := bytes.Split(line, []byte("="))
+			if len(parts) != 2 {
+				continue
+			}
+			secret[string(parts[0])] = string(parts[1])
+		}
+	}
+	return plain, secret, nil
+}
+
+func WriteEnvFile(projectDir string, plain, secret map[string]string) error {
+	realBs := bytes.Buffer{}
+	maskedBs := bytes.Buffer{}
+	for k, v := range plain {
+		realBs.WriteString(k)
+		realBs.WriteString("=")
+		realBs.WriteString(v)
+		realBs.WriteString("\n")
+
+		maskedBs.WriteString(k)
+		maskedBs.WriteString("=")
+		maskedBs.WriteString(v)
+		maskedBs.WriteString("\n")
+	}
+	realBs.WriteString("\n### secret\n")
+	maskedBs.WriteString("\n### secret\n")
+	for k, v := range secret {
+		realBs.WriteString(k)
+		realBs.WriteString("=")
+		realBs.WriteString(v)
+		realBs.WriteString("\n")
+
+		maskedBs.WriteString(k)
+		maskedBs.WriteString("=******\n")
+	}
+	err := os.WriteFile(filepath.Join(projectDir, ".env"), realBs.Bytes(), 0644)
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(filepath.Join(projectDir, "masked.env"), maskedBs.Bytes(), 0644)
+	if err != nil {
 		return err
 	}
 	return nil

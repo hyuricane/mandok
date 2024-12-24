@@ -13,12 +13,18 @@ Content-Type: application/json
       "image": "nginx",
       "labels": {
         "mandok": "visible"
+      },
+      "environment": {
+        "AUTH": "${ADMIN_USER}:${ADMIN_PASS}"
       }
     },
     "webia": {
       "image": "nginx",
       "labels": {
         "mandok": "visible"
+      },
+      "environment": {
+        "AUTH": "${ADMIN_USER}:${ADMIN_PASS}"
       }
     }
   }
@@ -56,13 +62,31 @@ Authorization: {{Auth}}
 POST {{host}}/hello/stop
 Authorization: {{Auth}}
 
-### route services
-POST {{host}}/hello/route/webia
+### envs
+GET {{host}}/hello/envs
+Authorization: {{Auth}}
+
+### envs
+POST {{host}}/hello/envs
 Authorization: {{Auth}}
 Content-Type: application/json
 
 {
-  "domain": "webia.hello.local"
+  "plain": {
+    "ADMIN_USER": "admin@something.com"
+  },
+  "secret": {
+    "ADMIN_PASS": "passwordadmin"
+  }
+}
+
+### route services
+POST {{host}}/hello/route/web
+Authorization: {{Auth}}
+Content-Type: application/json
+
+{
+  "domain": "web.hello.local"
 }
 
 ### delete route

@@ -19,6 +19,9 @@ func RouteCompose(group *echo.Group) {
 
 	group.POST("/:name/route/:service", routeService)
 	group.DELETE("/:name/route/:service", deleteRoute)
+
+	group.POST("/:name/envs", setEnvs)
+	group.GET("/:name/envs", getEnvs)
 }
 
 func createProject(c echo.Context) error {
@@ -248,5 +251,74 @@ func deleteRoute(c echo.Context) error {
 
 	return c.JSON(200, map[string]string{
 		"message": "ok",
+	})
+}
+
+type EnvBody struct {
+	Plain  map[string]string `json:"plain"`
+	Secret map[string]string `json:"secret"`
+}
+
+func setEnvs(c echo.Context) error {
+	name := c.Param("name")
+	body := EnvBody{}
+	err := c.Bind(&body)
+	if err != nil {
+		return c.JSON(400, map[string]string{
+			"message": err.Error(),
+		})
+	}
+	projectDir := compose.HasProject(name)
+	if projectDir == "" {
+		return c.JSON(404, map[string]string{
+			"message": "project not found",
+		})
+	}
+	// read from existing .env file
+	plain, secret, err := compose.ReadEnvFile(projectDir, false)
+	if err != nil {
+		return c.JSON(500, map[string]string{
+			"message": err.Error(),
+		})
+	}
+	// merge envs
+	for k, v := range body.Plain {
+		plain[k] = v
+	}
+	for k, v := range body.Secret {
+		secret[k] = v
+	}
+
+	// write to env files
+	err = compose.WriteEnvFile(projectDir, plain, secret)
+	if err != nil {
+		return c.JSON(500, map[string]string{
+			"message": err.Error(),
+		})
+	}
+	return c.JSON(200, map[string]string{
+		"message": "ok",
+	})
+}
+
+func getEnvs(c echo.Context) error {
+	name := c.Param("name")
+	projectDir := compose.HasProject(name)
+	if projectDir == "" {
+		return c.JSON(404, map[string]string{
+			"message": "project not found",
+		})
+	}
+	// read .env file
+	plain, secret, err := compose.ReadEnvFile(projectDir, true)
+	if err != nil {
+		return c.JSON(500, map[string]string{
+			"message": err.Error(),
+		})
+	}
+	return c.JSON(200, map[string]interface{}{
+		"message": "ok",
+		"plain":   plain,
+		"secret":  secret,
 	})
 }
