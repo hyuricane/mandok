@@ -11,14 +11,12 @@ Content-Type: application/json
   "services": {
     "web": {
       "image": "nginx",
-      "ports": ["8082:8080"],
       "labels": {
         "mandok": "visible"
       }
     },
     "webia": {
       "image": "nginx",
-      "ports": ["127.0.0.1:8081:8080"],
       "labels": {
         "mandok": "visible"
       }
@@ -58,29 +56,14 @@ Authorization: {{Auth}}
 POST {{host}}/hello/stop
 Authorization: {{Auth}}
 
-### get services
-GET {{host}}/simple/service
-Authorization: {{Auth}}
-
-### create service
-POST {{host}}/simple/service
+### route services
+POST {{host}}/hello/route/webia
 Authorization: {{Auth}}
 Content-Type: application/json
 
 {
-  "name": "webapp",
-  "image": "nginx",
-  "labels": {
-    "mandok": "visible"
-  }
+  "domain": "webia.hello.local"
 }
 
-### action
-PUT {{host}}/simple/action
-Authorization: {{Auth}}
-Content-Type: application/json
-
-{
-  "action": "down",
-  "services": []
-}
+### delete route
+DELETE {{host}}/hello/route/webia
