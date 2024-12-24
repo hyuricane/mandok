@@ -124,7 +124,7 @@ func HasProject(name string) string {
 
 func GetProject(projectDir string) (*ComposeProjectYaml, error) {
 	// go to project directory and trigger docker compose up
-	cmd := exec.Command("docker-compose", "config")
+	cmd := exec.Command("docker-compose", "config", "--format", "json")
 	cmd.Dir = projectDir
 	// read from cmd output
 	buff := bytes.NewBuffer([]byte{})
@@ -136,7 +136,7 @@ func GetProject(projectDir string) (*ComposeProjectYaml, error) {
 		return nil, err
 	}
 	prj := ComposeProjectYaml{}
-	err = yaml.NewDecoder(buff).Decode(&prj)
+	err = json.NewDecoder(buff).Decode(&prj)
 	if err != nil {
 		if errBuff.String() != "" {
 			return nil, errors.New(errBuff.String())
