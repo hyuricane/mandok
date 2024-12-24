@@ -16,6 +16,9 @@ func RouteCompose(group *echo.Group) {
 	group.POST("/:name/start", startProject)
 	group.POST("/:name/stop", stopProject)
 	group.DELETE("/:name", deleteProject)
+
+	group.POST("/:name/route/:service", routeService)
+	group.DELETE("/:name/route/:service", deleteRoute)
 }
 
 func createProject(c echo.Context) error {
@@ -169,6 +172,80 @@ func deleteProject(c echo.Context) error {
 			"message": err.Error(),
 		})
 	}
+	return c.JSON(200, map[string]string{
+		"message": "ok",
+	})
+}
+
+type RouteBodyService struct {
+	Domain string `json:"domain"`
+	Port   int    `json:"port"`
+}
+
+func routeService(c echo.Context) error {
+	projectName := c.Param("name")
+	serviceName := c.Param("service")
+	if projectName == "" {
+		return c.JSON(404, map[string]string{
+			"message": "project not found",
+		})
+	}
+	if serviceName == "" {
+		return c.JSON(404, map[string]string{
+			"message": "service not found",
+		})
+	}
+	projectDir := compose.HasProject(projectName)
+	if projectDir == "" {
+		return c.JSON(404, map[string]string{
+			"message": "project not found",
+		})
+	}
+	body := RouteBodyService{}
+	err := c.Bind(&body)
+	if err != nil {
+		return c.JSON(500, map[string]string{
+			"message": err.Error(),
+		})
+	}
+	err = compose.RouteService(projectDir, serviceName, body.Domain, body.Port)
+	if err != nil {
+		return c.JSON(500, map[string]string{
+			"message": err.Error(),
+		})
+	}
+
+	return c.JSON(200, map[string]interface{}{
+		"message": "ok",
+	})
+}
+
+func deleteRoute(c echo.Context) error {
+	projectName := c.Param("name")
+	serviceName := c.Param("service")
+	if projectName == "" {
+		return c.JSON(404, map[string]string{
+			"message": "project not found",
+		})
+	}
+	if serviceName == "" {
+		return c.JSON(404, map[string]string{
+			"message": "service not found",
+		})
+	}
+	projectDir := compose.HasProject(projectName)
+	if projectDir == "" {
+		return c.JSON(404, map[string]string{
+			"message": "project not found",
+		})
+	}
+	err := compose.DeleteRoute(projectDir, serviceName)
+	if err != nil {
+		return c.JSON(500, map[string]string{
+			"message": err.Error(),
+		})
+	}
+
 	return c.JSON(200, map[string]string{
 		"message": "ok",
 	})

@@ -15,6 +15,7 @@ import (
 )
 
 type ComposeProjectYaml struct {
+	Name     string                 `yaml:"-" json:"name,omitempty"`
 	Version  string                 `yaml:"version,omitempty" json:"version,omitempty"`
 	Services map[string]interface{} `yaml:"services" json:"services"`
 	Volumes  map[string]interface{} `yaml:"volumes,omitempty" json:"volumes,omitempty"`
@@ -244,6 +245,149 @@ func DownProject(projectDir string) error {
 		}
 		return err
 	}
+	return nil
+}
+
+func RouteService(projectDir string, serviceName string, domain string, port int) error {
+	if projectDir == "" {
+		return nil
+	}
+	if serviceName == "" {
+		return nil
+	}
+	if domain == "" {
+		return nil
+	}
+
+	project, err := GetProject(projectDir)
+	if err != nil {
+		return err
+	}
+	service, ok := project.Services[serviceName]
+	if !ok {
+		return errors.New("service not found")
+	}
+	serviceM, ok := service.(map[string]interface{})
+	if !ok {
+		return errors.New("service not found")
+	}
+
+	var labels map[string]interface{}
+	if Ilabels, ok := serviceM["labels"]; !ok {
+		labels = map[string]interface{}{}
+	} else {
+		labels, ok = Ilabels.(map[string]interface{})
+		if !ok {
+			return errors.New("internal server error")
+		}
+	}
+	labels["traefik.enable"] = "true"
+	labels["traefik.http.routers."+project.Name+"_"+serviceName+".rule"] = "Host(`" + domain + "`)"
+	labels["traefik.docker.network"] = "traefik"
+	if port != 0 {
+		labels["traefik.http.services."+project.Name+"_"+serviceName+".loadbalancer.server.port"] = port
+	} else {
+		// delete label port
+		delete(labels, "traefik.http.services."+project.Name+"_"+serviceName+".loadbalancer.server.port")
+	}
+	serviceM["labels"] = labels
+
+	// attach to traefik network
+	var networks map[string]interface{}
+	networksI, ok := serviceM["networks"]
+	if !ok {
+		networks = map[string]interface{}{}
+	} else {
+		networks, ok = networksI.(map[string]interface{})
+		if !ok {
+			return errors.New("internal server error")
+		}
+	}
+	networks["traefik"] = nil
+	serviceM["networks"] = networks
+	project.Services[serviceName] = serviceM
+
+	// attach traefik external network to project
+	if project.Networks == nil {
+		project.Networks = map[string]interface{}{}
+	}
+	project.Networks["traefik"] = map[string]interface{}{
+		"external": true,
+	}
+
+	_, err = CreateProject(project.Name, *project)
+	if err != nil {
+		return err
+	}
+	projectStatus, err := GetStatus(projectDir, false, serviceName)
+	if err != nil {
+		return err
+	}
+	if len(projectStatus) == 0 {
+		return nil
+	}
+	if sstat, ok := projectStatus[serviceName]; ok && sstat.State == "running" {
+		err = StartProject(projectDir, false, false, serviceName)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func DeleteRoute(projectDir string, serviceName string) error {
+	if projectDir == "" {
+		return nil
+	}
+	if serviceName == "" {
+		return nil
+	}
+
+	project, err := GetProject(projectDir)
+	if err != nil {
+		return err
+	}
+	service, ok := project.Services[serviceName]
+	if !ok {
+		return errors.New("service not found")
+	}
+	serviceM, ok := service.(map[string]interface{})
+	if !ok {
+		return errors.New("service not found")
+	}
+
+	var labels map[string]interface{}
+	if Ilabels, ok := serviceM["labels"]; !ok {
+		labels = map[string]interface{}{}
+	} else {
+		labels, ok = Ilabels.(map[string]interface{})
+		if !ok {
+			return errors.New("internal server error")
+		}
+	}
+	labels["traefik.enable"] = false
+	serviceM["labels"] = labels
+
+	project.Services[serviceName] = serviceM
+
+	_, err = CreateProject(project.Name, *project)
+	if err != nil {
+		return err
+	}
+	projectStatus, err := GetStatus(projectDir, false, serviceName)
+	if err != nil {
+		return err
+	}
+	if len(projectStatus) == 0 {
+		return nil
+	}
+	if sstat, ok := projectStatus[serviceName]; ok && sstat.State == "running" {
+		err = StartProject(projectDir, false, false, serviceName)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
