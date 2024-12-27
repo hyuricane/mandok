@@ -140,9 +140,13 @@ func HasProject(name string) string {
 	return projectPath
 }
 
-func GetProject(projectDir string) (*ComposeProjectYaml, error) {
+func GetProject(projectDir string, nointerpolate ...bool) (*ComposeProjectYaml, error) {
 	// go to project directory and trigger docker compose up
-	cmd := exec.Command("docker-compose", "--env-file", "masked.env", "config", "--format", "json")
+	args := []string{"--env-file", "masked.env", "config", "--format", "json"}
+	if len(nointerpolate) > 0 && nointerpolate[0] {
+		args = []string{"config", "--format", "json", "--no-interpolate"}
+	}
+	cmd := exec.Command("docker-compose", args...)
 	cmd.Dir = projectDir
 	out, err := doExec(cmd)
 	if err != nil {
@@ -274,7 +278,7 @@ func RouteService(projectDir string, serviceName string, domain string, port int
 		return nil
 	}
 
-	project, err := GetProject(projectDir)
+	project, err := GetProject(projectDir, true)
 	if err != nil {
 		return err
 	}
@@ -358,7 +362,7 @@ func DeleteRoute(projectDir string, serviceName string) error {
 		return nil
 	}
 
-	project, err := GetProject(projectDir)
+	project, err := GetProject(projectDir, true)
 	if err != nil {
 		return err
 	}
