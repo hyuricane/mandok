@@ -70,7 +70,17 @@ func NewComposeError(buffErr *bytes.Buffer) *ComposeError {
 	return nil
 }
 
-const PROJECT_DIRS = "projects"
+var PROJECT_DIRS = "projects"
+var NETWORK = "mandok"
+
+func init() {
+	if os.Getenv("PROJECT_DIRS") != "" {
+		PROJECT_DIRS = os.Getenv("PROJECT_DIRS")
+	}
+	if os.Getenv("NETWORK") != "" {
+		NETWORK = os.Getenv("NETWORK")
+	}
+}
 
 func CreateProject(name string, projectConfig ComposeProjectYaml) (string, error) {
 	if name == "" {
@@ -284,7 +294,7 @@ func RouteService(projectDir string, serviceName string, domain string, port int
 	}
 	labels["traefik.enable"] = "true"
 	labels["traefik.http.routers."+project.Name+"_"+serviceName+".rule"] = "Host(`" + domain + "`)"
-	labels["traefik.docker.network"] = "traefik"
+	labels["traefik.docker.network"] = NETWORK
 	if port != 0 {
 		labels["traefik.http.services."+project.Name+"_"+serviceName+".loadbalancer.server.port"] = port
 	} else {
@@ -304,7 +314,7 @@ func RouteService(projectDir string, serviceName string, domain string, port int
 			return errors.New("internal server error")
 		}
 	}
-	networks["traefik"] = nil
+	networks[NETWORK] = nil
 	serviceM["networks"] = networks
 	project.Services[serviceName] = serviceM
 
@@ -312,7 +322,7 @@ func RouteService(projectDir string, serviceName string, domain string, port int
 	if project.Networks == nil {
 		project.Networks = map[string]interface{}{}
 	}
-	project.Networks["traefik"] = map[string]interface{}{
+	project.Networks[NETWORK] = map[string]interface{}{
 		"external": true,
 	}
 
