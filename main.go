@@ -1,10 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
+	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/joho/godotenv"
 	"inovasiriset.co.id/docker/manager/app/lib/compose"
@@ -15,12 +19,20 @@ func main() {
 	godotenv.Load()
 	if os.Getenv("TRAEFIK") == "true" {
 		ssl := os.Getenv("TRAEFIK_SSL") == "true"
-		initTraefik(ssl)
+		err := initTraefik(ssl)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 	log.Fatal(web.ListenHttp())
 }
 
 func initTraefik(ssl bool) error {
+	networkname := os.Getenv("NETWORK")
+	if networkname == "" {
+		networkname = "mandok"
+	}
+
 	sslCommands := []string{}
 	if ssl {
 		acmeEmail := os.Getenv("ACME_EMAIL")
@@ -33,14 +45,6 @@ func initTraefik(ssl bool) error {
 			"--certificatesResolvers.default.acme.storage=/letsencrypt/acme.json",
 		)
 	}
-
-	// // init docker network traefik as external
-	// err := exec.Command(
-	// 	"docker", "network", "create", "traefik",
-	// ).Run()
-	// if err != nil {
-	// 	return err
-	// }
 
 	projectConfig := compose.ComposeProjectYaml{
 		Services: map[string]interface{}{
@@ -65,10 +69,11 @@ func initTraefik(ssl bool) error {
 		},
 		Networks: map[string]interface{}{
 			"default": map[string]interface{}{
-				"name": "traefik",
+				"name": networkname,
 			},
 		},
 	}
+
 	projectDir, err := compose.CreateProject("traefik", projectConfig)
 	if err != nil {
 		return err
@@ -82,6 +87,43 @@ func initTraefik(ssl bool) error {
 		}
 		f.Close()
 	}
+	log.Printf("[DEBUG] start traefik")
 	err = compose.StartProject(projectDir, false, false)
+	if err != nil {
+		return err
+	}
+
+	cid, err := getCID()
+	if err != nil {
+		return err
+	}
+	log.Printf("[DEBUG] container id %s", cid)
+	err = compose.AttachToDockerNetwork(networkname, cid)
+	if err != nil {
+		return err
+	}
+
+	// restart traefik for
+	err = compose.StartProject(projectDir, true, false, "traefik")
+	if err != nil {
+		return err
+	}
 	return err
+}
+
+func getCID() (string, error) {
+	cidExec := exec.Command("cat", "/proc/1/cpuset")
+	buff := bytes.NewBuffer(nil)
+	buffErr := bytes.NewBuffer(nil)
+	cidExec.Stdout = buff
+	cidExec.Stderr = buffErr
+	err := cidExec.Run()
+	if err != nil {
+		if buffErr.Len() > 0 {
+			err = fmt.Errorf("%s", buffErr.String())
+		}
+		return "", err
+	}
+	cid := path.Base(strings.TrimSpace(buff.String()))
+	return cid, nil
 }

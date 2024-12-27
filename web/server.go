@@ -6,6 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	apiHandlers "inovasiriset.co.id/docker/manager/web/handlers/api/v1"
+	"inovasiriset.co.id/docker/manager/web/handlers/dashboard"
 	"inovasiriset.co.id/docker/manager/web/middlewares"
 )
 
@@ -20,12 +21,11 @@ func ListenHttp() error {
 		c.Logger().Error(err)
 		c.Echo().DefaultHTTPErrorHandler(err, c)
 	}
-	app.GET("/", func(c echo.Context) error {
-		return c.String(200, "Hello, World!")
-	})
-	apiHandlers.RouteDocker(app.Group("/api/docker", middlewares.BasicAuth()))
-	apiHandlers.RouteCompose(app.Group("/api/compose", middlewares.BasicAuth()))
-	apiHandlers.RouteRepo(app.Group("/api/repo", middlewares.BasicAuth()))
+	dashboard.RouteDashboard(app.Group(""))
+
+	apiHandlers.RouteDocker(app.Group("/api/docker", middlewares.MiddlewareAuth()))
+	apiHandlers.RouteCompose(app.Group("/api/compose", middlewares.MiddlewareAuth()))
+	apiHandlers.RouteRepo(app.Group("/api/repo", middlewares.MiddlewareAuth()))
 
 	port := os.Getenv("PORT")
 	if port == "" {

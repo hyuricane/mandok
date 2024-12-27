@@ -5,6 +5,7 @@ go 1.22.0
 replace github.com/docker/docker => github.com/docker/engine v0.0.0-20190725163905-fa8dd90ceb7b
 
 require (
+	github.com/a-h/templ v0.2.793
 	github.com/joho/godotenv v1.5.1
 	github.com/labstack/echo/v4 v4.12.0
 	github.com/portainer/libcompose v0.5.3
