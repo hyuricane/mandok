@@ -144,21 +144,13 @@ func GetProject(projectDir string) (*ComposeProjectYaml, error) {
 	// go to project directory and trigger docker compose up
 	cmd := exec.Command("docker-compose", "--env-file", "masked.env", "config", "--format", "json")
 	cmd.Dir = projectDir
-	// read from cmd output
-	buff := bytes.NewBuffer([]byte{})
-	errBuff := bytes.NewBuffer([]byte{})
-	cmd.Stdout = buff
-	cmd.Stderr = errBuff
-	err := cmd.Run()
+	out, err := doExec(cmd)
 	if err != nil {
 		return nil, err
 	}
 	prj := ComposeProjectYaml{}
-	err = json.NewDecoder(buff).Decode(&prj)
+	err = json.NewDecoder(out).Decode(&prj)
 	if err != nil {
-		if errBuff.String() != "" {
-			return nil, errors.New(errBuff.String())
-		}
 		return nil, err
 	}
 	return &prj, nil
@@ -173,19 +165,11 @@ func GetStatus(projectDir string, all bool, services ...string) (map[string]Expe
 	cmd := exec.Command("docker-compose", args...)
 	cmd.Dir = projectDir
 
-	buff := bytes.NewBuffer([]byte{})
-	buffErr := bytes.NewBuffer([]byte{})
-	cmd.Stdout = buff
-	cmd.Stderr = buffErr
-
-	err := cmd.Run()
+	out, err := doExec(cmd)
 	if err != nil {
-		if cErr := NewComposeError(buffErr); cErr != nil {
-			return nil, cErr
-		}
 		return nil, err
 	}
-	outputStrs := strings.Split(buff.String(), "\n")
+	outputStrs := strings.Split(out.String(), "\n")
 	retval := map[string]ExpectedPSData{}
 	for _, outputStr := range outputStrs {
 		if outputStr == "" {
@@ -236,21 +220,14 @@ func StartProject(projectDir string, restart bool, pull bool, services ...string
 	if pull {
 		args = append(args, "--pull", "always")
 	}
-	args = append(args, service...)
+	args = append(args, services...)
 	cmd := exec.Command("docker-compose", args...)
 	cmd.Dir = projectDir
-
-	buff := bytes.NewBuffer([]byte{})
-	buffErr := bytes.NewBuffer([]byte{})
-	cmd.Stdout = buff
-	cmd.Stderr = buffErr
-
-	if err := cmd.Run(); err != nil {
-		if cErr := NewComposeError(buffErr); cErr != nil {
-			return cErr
-		}
+	_, err := doExec(cmd)
+	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -260,13 +237,10 @@ func StopProject(projectDir string, service ...string) error {
 	cmd := exec.Command("docker-compose", args...)
 	cmd.Dir = projectDir
 
-	buff := bytes.NewBuffer([]byte{})
-	buffErr := bytes.NewBuffer([]byte{})
-	cmd.Stdout = buff
-	cmd.Stderr = buffErr
+	_, err := doExec(cmd)
 
-	if err := cmd.Run(); err != nil {
-		if cErr := NewComposeError(buffErr); cErr != nil {
+	if err != nil {
+		if cErr := NewComposeError(bytes.NewBufferString(err.Error())); cErr != nil {
 			return cErr
 		}
 
@@ -278,14 +252,10 @@ func StopProject(projectDir string, service ...string) error {
 func DownProject(projectDir string) error {
 	cmd := exec.Command("docker-compose", "down")
 	cmd.Dir = projectDir
+	_, err := doExec(cmd)
 
-	buff := bytes.NewBuffer([]byte{})
-	buffErr := bytes.NewBuffer([]byte{})
-	cmd.Stdout = buff
-	cmd.Stderr = buffErr
-
-	if err := cmd.Run(); err != nil {
-		if cErr := NewComposeError(buffErr); cErr != nil {
+	if err != nil {
+		if cErr := NewComposeError(bytes.NewBufferString(err.Error())); cErr != nil {
 			return cErr
 		}
 		return err
@@ -445,14 +415,10 @@ func TryProject(projectDir string, configFileName string) error {
 	args = append(args, "up", "-d")
 	cmd := exec.Command("docker-compose", args...)
 	cmd.Dir = projectDir
+	_, err := doExec(cmd)
 
-	buff := bytes.NewBuffer([]byte{})
-	buffErr := bytes.NewBuffer([]byte{})
-	cmd.Stdout = buff
-	cmd.Stderr = buffErr
-
-	if err := cmd.Run(); err != nil {
-		if cErr := NewComposeError(buffErr); cErr != nil {
+	if err != nil {
+		if cErr := NewComposeError(bytes.NewBufferString(err.Error())); cErr != nil {
 			return cErr
 		}
 		return err
