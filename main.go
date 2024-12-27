@@ -98,16 +98,19 @@ func initTraefik(ssl bool) error {
 		return err
 	}
 	log.Printf("[DEBUG] container id %s", cid)
-	err = compose.AttachToDockerNetwork(networkname, cid)
+	attached, err := compose.AttachToDockerNetwork(networkname, cid)
 	if err != nil {
 		return err
 	}
 
-	// restart traefik for
-	err = compose.StartProject(projectDir, true, false, "traefik")
-	if err != nil {
-		return err
+	if attached {
+		// restart traefik to renew route
+		err = compose.StartProject(projectDir, true, false, "traefik")
+		if err != nil {
+			return err
+		}
 	}
+
 	return err
 }
 
