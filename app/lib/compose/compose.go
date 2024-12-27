@@ -40,6 +40,12 @@ type ExpectedPSData struct {
 	ExitCode   int    `json:"ExitCode"`
 }
 
+type ExtendedPSData struct {
+	ExpectedPSData `json:",inline"`
+	ID             string `json:"ID"`
+	Labels         string `json:"Labels"`
+}
+
 type ComposeError struct {
 	s []string
 }
@@ -194,7 +200,35 @@ func GetStatus(projectDir string, all bool, services ...string) (map[string]Expe
 	return retval, nil
 }
 
-func StartProject(projectDir string, restart bool, pull bool, service ...string) error {
+func GetStatusExt(projectDir string, all bool, services ...string) (map[string]ExtendedPSData, error) {
+	args := []string{"ps", "--format", "json"}
+	if all {
+		args = append(args, "-a")
+	}
+	args = append(args, services...)
+	cmd := exec.Command("docker-compose", args...)
+	cmd.Dir = projectDir
+
+	out, err := doExec(cmd)
+	if err != nil {
+		return nil, err
+	}
+	outputStrs := strings.Split(out.String(), "\n")
+	retval := map[string]ExtendedPSData{}
+	for _, outputStr := range outputStrs {
+		if outputStr == "" {
+			continue
+		}
+		psData := ExtendedPSData{}
+		if err := json.Unmarshal([]byte(outputStr), &psData); err != nil {
+			return nil, err
+		}
+		retval[psData.Service] = psData
+	}
+	return retval, nil
+}
+
+func StartProject(projectDir string, restart bool, pull bool, services ...string) error {
 	args := []string{"up", "-d"}
 	if restart {
 		args = append(args, "--force-recreate")
