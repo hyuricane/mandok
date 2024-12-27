@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -490,4 +491,30 @@ func WriteEnvFile(projectDir string, plain, secret map[string]string) error {
 		return err
 	}
 	return nil
+}
+
+func AttachToDockerNetwork(networkName string, cid string) error {
+	// attach container to network
+	log.Printf("[DEBUG] attaching container %s to network %s", cid, networkName)
+	networkExec := exec.Command("docker", "network", "connect", networkName, cid)
+	_, err := doExec(networkExec)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func doExec(cmd *exec.Cmd) (*bytes.Buffer, error) {
+	buff := bytes.NewBuffer(nil)
+	buffErr := bytes.NewBuffer(nil)
+	cmd.Stdout = buff
+	cmd.Stderr = buffErr
+	err := cmd.Run()
+	if err != nil {
+		if buffErr.Len() > 0 {
+			err = fmt.Errorf("%s", buffErr.String())
+		}
+		return nil, err
+	}
+	return buff, nil
 }
