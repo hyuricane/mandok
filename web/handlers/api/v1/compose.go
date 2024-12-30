@@ -19,6 +19,7 @@ func RouteCompose(group *echo.Group) {
 
 	group.POST("/:name/route/:service", routeService)
 	group.DELETE("/:name/route/:service", deleteRoute)
+	group.GET("/:name/route", getRoutes)
 
 	group.POST("/:name/envs", setEnvs)
 	group.GET("/:name/envs", getEnvs)
@@ -62,17 +63,6 @@ func getProject(c echo.Context) error {
 		})
 	}
 	return c.JSON(200, project)
-}
-
-type ExpectedPSData struct {
-	Service    string `json:"Service"`
-	CreatedAt  string `json:"CreatedAt"`
-	Image      string `json:"Image"`
-	Status     string `json:"Status"`
-	State      string `json:"State"`
-	Size       string `json:"Size"`
-	RunningFor string `json:"RunningFor"`
-	ExitCode   int    `json:"ExitCode"`
 }
 
 func getStatus(c echo.Context) error {
@@ -180,12 +170,6 @@ func deleteProject(c echo.Context) error {
 	})
 }
 
-type RouteBodyService struct {
-	Domain string                 `json:"domain"`
-	Port   int                    `json:"port"`
-	Sticky map[string]interface{} `json:"sticky"`
-}
-
 func routeService(c echo.Context) error {
 	projectName := c.Param("name")
 	serviceName := c.Param("service")
@@ -205,14 +189,14 @@ func routeService(c echo.Context) error {
 			"message": "project not found",
 		})
 	}
-	body := RouteBodyService{}
+	body := compose.ServiceRoute{}
 	err := c.Bind(&body)
 	if err != nil {
 		return c.JSON(500, map[string]string{
 			"message": err.Error(),
 		})
 	}
-	err = compose.RouteService(projectDir, serviceName, body.Domain, body.Port, body.Sticky)
+	err = compose.RouteService(projectDir, serviceName, body)
 	if err != nil {
 		return c.JSON(500, map[string]string{
 			"message": err.Error(),
@@ -253,6 +237,31 @@ func deleteRoute(c echo.Context) error {
 	return c.JSON(200, map[string]string{
 		"message": "ok",
 	})
+}
+
+func getRoutes(c echo.Context) error {
+	name := c.Param("name")
+	services := []string{}
+	for k, v := range c.Request().URL.Query() {
+		// keys = append(keys, k)
+		if k == "service" {
+			services = append(services, v...)
+			continue
+		}
+	}
+	projectDir := compose.HasProject(name)
+	if projectDir == "" {
+		return c.JSON(404, map[string]string{
+			"message": "project not found",
+		})
+	}
+	routes, err := compose.GetRoutes(projectDir, services...)
+	if err != nil {
+		return c.JSON(500, map[string]string{
+			"message": err.Error(),
+		})
+	}
+	return c.JSON(200, routes)
 }
 
 type EnvBody struct {

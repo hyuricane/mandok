@@ -91,3 +91,8 @@ Content-Type: application/json
 
 ### delete route
 DELETE {{host}}/hello/route/webia
+Authorization: {{Auth}}
+
+### get routes
+GET {{host}}/hello/route
+Authorization: {{Auth}}

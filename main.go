@@ -47,8 +47,8 @@ func initTraefik(ssl bool) error {
 	}
 
 	projectConfig := compose.ComposeProjectYaml{
-		Services: map[string]interface{}{
-			"traefik": map[string]interface{}{
+		Services: map[string]map[string]interface{}{
+			"traefik": {
 				"image": "traefik",
 				"command": append([]string{
 					"--log.level=DEBUG",

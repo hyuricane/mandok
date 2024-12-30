@@ -10,17 +10,18 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"gopkg.in/yaml.v3"
 )
 
 type ComposeProjectYaml struct {
-	Name     string                 `yaml:"-" json:"name,omitempty"`
-	Version  string                 `yaml:"version,omitempty" json:"version,omitempty"`
-	Services map[string]interface{} `yaml:"services" json:"services"`
-	Volumes  map[string]interface{} `yaml:"volumes,omitempty" json:"volumes,omitempty"`
-	Networks map[string]interface{} `yaml:"networks,omitempty" json:"networks,omitempty"`
+	Name     string                            `yaml:"-" json:"name,omitempty"`
+	Version  string                            `yaml:"version,omitempty" json:"version,omitempty"`
+	Services map[string]map[string]interface{} `yaml:"services" json:"services"`
+	Volumes  map[string]interface{}            `yaml:"volumes,omitempty" json:"volumes,omitempty"`
+	Networks map[string]interface{}            `yaml:"networks,omitempty" json:"networks,omitempty"`
 }
 
 type RepoAuth struct {
@@ -94,7 +95,7 @@ func CreateProject(name string, projectConfig ComposeProjectYaml) (string, error
 	}
 
 	if projectConfig.Services == nil {
-		projectConfig.Services = map[string]interface{}{}
+		projectConfig.Services = map[string]map[string]interface{}{}
 	}
 	// create dir
 	projectPath := path.Join(PROJECT_DIRS, name)
@@ -267,14 +268,20 @@ func DownProject(projectDir string) error {
 	return nil
 }
 
-func RouteService(projectDir string, serviceName string, domain string, port int, sticky map[string]interface{}) error {
+type ServiceRoute struct {
+	Domain string                 `json:"domain"`
+	Port   int                    `json:"port,omitempty"`
+	Sticky map[string]interface{} `json:"sticky,omitempty"`
+}
+
+func RouteService(projectDir string, serviceName string, route ServiceRoute) error {
 	if projectDir == "" {
 		return nil
 	}
 	if serviceName == "" {
 		return nil
 	}
-	if domain == "" {
+	if route.Domain == "" {
 		return nil
 	}
 
@@ -286,13 +293,9 @@ func RouteService(projectDir string, serviceName string, domain string, port int
 	if !ok {
 		return errors.New("service not found")
 	}
-	serviceM, ok := service.(map[string]interface{})
-	if !ok {
-		return errors.New("service not found")
-	}
 
 	var labels map[string]interface{}
-	if Ilabels, ok := serviceM["labels"]; !ok {
+	if Ilabels, ok := service["labels"]; !ok {
 		labels = map[string]interface{}{}
 	} else {
 		labels, ok = Ilabels.(map[string]interface{})
@@ -301,15 +304,15 @@ func RouteService(projectDir string, serviceName string, domain string, port int
 		}
 	}
 	labels["traefik.enable"] = "true"
-	labels["traefik.http.routers."+project.Name+"_"+serviceName+".rule"] = "Host(`" + domain + "`)"
+	labels["traefik.http.routers."+project.Name+"_"+serviceName+".rule"] = "Host(`" + route.Domain + "`)"
 	labels["traefik.docker.network"] = NETWORK
-	if port != 0 {
-		labels["traefik.http.services."+project.Name+"_"+serviceName+".loadbalancer.server.port"] = port
+	if route.Port != 0 {
+		labels["traefik.http.services."+project.Name+"_"+serviceName+".loadbalancer.server.port"] = route.Port
 	} else {
 		// delete label port
 		delete(labels, "traefik.http.services."+project.Name+"_"+serviceName+".loadbalancer.server.port")
 	}
-	for k, v := range sticky {
+	for k, v := range route.Sticky {
 		stickyName := k
 		switch s := v.(type) {
 		case map[string]interface{}:
@@ -320,11 +323,11 @@ func RouteService(projectDir string, serviceName string, domain string, port int
 			labels[fmt.Sprintf("traefik.http.services.%s_%s.loadbalancer.sticky.%s", project.Name, serviceName, stickyName)] = v
 		}
 	}
-	serviceM["labels"] = labels
+	service["labels"] = labels
 
 	// attach to traefik network
 	var networks map[string]interface{}
-	networksI, ok := serviceM["networks"]
+	networksI, ok := service["networks"]
 	if !ok {
 		networks = map[string]interface{}{}
 	} else {
@@ -334,8 +337,8 @@ func RouteService(projectDir string, serviceName string, domain string, port int
 		}
 	}
 	networks[NETWORK] = nil
-	serviceM["networks"] = networks
-	project.Services[serviceName] = serviceM
+	service["networks"] = networks
+	project.Services[serviceName] = service
 
 	// attach traefik external network to project
 	if project.Networks == nil {
@@ -381,13 +384,9 @@ func DeleteRoute(projectDir string, serviceName string) error {
 	if !ok {
 		return errors.New("service not found")
 	}
-	serviceM, ok := service.(map[string]interface{})
-	if !ok {
-		return errors.New("service not found")
-	}
 
 	var labels map[string]interface{}
-	if Ilabels, ok := serviceM["labels"]; !ok {
+	if Ilabels, ok := service["labels"]; !ok {
 		labels = map[string]interface{}{}
 	} else {
 		labels, ok = Ilabels.(map[string]interface{})
@@ -396,9 +395,9 @@ func DeleteRoute(projectDir string, serviceName string) error {
 		}
 	}
 	labels["traefik.enable"] = false
-	serviceM["labels"] = labels
+	service["labels"] = labels
 
-	project.Services[serviceName] = serviceM
+	project.Services[serviceName] = service
 
 	_, err = CreateProject(project.Name, *project)
 	if err != nil {
@@ -419,6 +418,76 @@ func DeleteRoute(projectDir string, serviceName string) error {
 	}
 
 	return nil
+}
+
+func GetRoutes(projectDir string, services ...string) (map[string]ServiceRoute, error) {
+	if projectDir == "" {
+		return nil, nil
+	}
+	args := []string{"config", "--format", "json"}
+	args = append(args, services...)
+
+	cmd := exec.Command("docker-compose", args...)
+	cmd.Dir = projectDir
+	out, err := doExec(cmd)
+	if err != nil {
+		return nil, err
+	}
+	project := ComposeProjectYaml{}
+	err = json.NewDecoder(out).Decode(&project)
+	if err != nil {
+		return nil, err
+	}
+
+	serviceRoutes := map[string]ServiceRoute{}
+	for serviceName, serviceConfig := range project.Services {
+		labels, ok := serviceConfig["labels"]
+		if !ok {
+			continue
+		}
+		labelsMap, ok := labels.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if enabled, ok := labelsMap["traefik.enable"]; !ok || enabled != "true" {
+			continue
+		}
+		serviceRoute := ServiceRoute{}
+		for k, v := range labelsMap {
+			if strings.HasPrefix(k, "traefik.http.") {
+				switch k {
+				case fmt.Sprintf("traefik.http.routers.%s_%s.rule", project.Name, serviceName):
+					domain := strings.TrimPrefix(v.(string), "Host(`")
+					domain = strings.TrimSuffix(domain, "`)")
+					serviceRoute.Domain = domain
+				case fmt.Sprintf("traefik.http.services.%s_%s.loadbalancer.server.port", project.Name, serviceName):
+					if str, ok := v.(string); ok {
+						port, err := strconv.Atoi(str)
+						if err != nil {
+							return nil, err
+						}
+						serviceRoute.Port = port
+					} else if i, ok := v.(int); ok {
+						serviceRoute.Port = i
+					}
+				default:
+					if strings.HasPrefix(k, fmt.Sprintf("traefik.http.services.%s_%s.loadbalancer.sticky.", project.Name, serviceName)) {
+						if serviceRoute.Sticky == nil {
+							serviceRoute.Sticky = map[string]interface{}{}
+						}
+						// process sticky
+						k = strings.TrimLeft(k, fmt.Sprintf("traefik.http.services.%s_%s.loadbalancer.sticky.", project.Name, serviceName))
+						if strings.Contains(k, ".") {
+							continue
+						}
+						serviceRoute.Sticky[k] = v
+					}
+				}
+			}
+		}
+		serviceRoutes[serviceName] = serviceRoute
+	}
+	return serviceRoutes, nil
 }
 
 // dry run docker compose up
