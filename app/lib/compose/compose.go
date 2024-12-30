@@ -161,6 +161,20 @@ func GetProject(projectDir string, nointerpolate ...bool) (*ComposeProjectYaml, 
 	return &prj, nil
 }
 
+func GetProjects() ([]string, error) {
+	projects := []string{}
+	files, err := os.ReadDir(PROJECT_DIRS)
+	if err != nil {
+		return nil, err
+	}
+	for _, file := range files {
+		if file.IsDir() {
+			projects = append(projects, file.Name())
+		}
+	}
+	return projects, nil
+}
+
 func GetStatus(projectDir string, all bool, services ...string) (map[string]ExpectedPSData, error) {
 	args := []string{"ps", "--format", "json"}
 	if all {
