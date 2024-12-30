@@ -1,7 +1,12 @@
 package pages
 
-templ Dashbaord() {
+templ Dashbaord(projects []string) {
   <body>
     <h1>Welcome</h1>
+    <ul>
+    for _, p := range projects {
+      <li><a href={templ.SafeURL("/" + p)}>{p}</a></li>
+    }
+    </ul>
   </body>
 }
