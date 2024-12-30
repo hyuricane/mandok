@@ -267,7 +267,7 @@ func DownProject(projectDir string) error {
 	return nil
 }
 
-func RouteService(projectDir string, serviceName string, domain string, port int) error {
+func RouteService(projectDir string, serviceName string, domain string, port int, sticky map[string]interface{}) error {
 	if projectDir == "" {
 		return nil
 	}
@@ -308,6 +308,17 @@ func RouteService(projectDir string, serviceName string, domain string, port int
 	} else {
 		// delete label port
 		delete(labels, "traefik.http.services."+project.Name+"_"+serviceName+".loadbalancer.server.port")
+	}
+	for k, v := range sticky {
+		stickyName := k
+		switch s := v.(type) {
+		case map[string]interface{}:
+			for k, v := range s {
+				labels[fmt.Sprintf("traefik.http.services.%s_%s.loadbalancer.sticky.%s.%s", project.Name, serviceName, stickyName, k)] = v
+			}
+		default:
+			labels[fmt.Sprintf("traefik.http.services.%s_%s.loadbalancer.sticky.%s", project.Name, serviceName, stickyName)] = v
+		}
 	}
 	serviceM["labels"] = labels
 

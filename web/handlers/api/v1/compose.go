@@ -181,8 +181,9 @@ func deleteProject(c echo.Context) error {
 }
 
 type RouteBodyService struct {
-	Domain string `json:"domain"`
-	Port   int    `json:"port"`
+	Domain string                 `json:"domain"`
+	Port   int                    `json:"port"`
+	Sticky map[string]interface{} `json:"sticky"`
 }
 
 func routeService(c echo.Context) error {
@@ -211,7 +212,7 @@ func routeService(c echo.Context) error {
 			"message": err.Error(),
 		})
 	}
-	err = compose.RouteService(projectDir, serviceName, body.Domain, body.Port)
+	err = compose.RouteService(projectDir, serviceName, body.Domain, body.Port, body.Sticky)
 	if err != nil {
 		return c.JSON(500, map[string]string{
 			"message": err.Error(),
