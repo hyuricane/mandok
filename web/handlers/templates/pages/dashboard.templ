@@ -1,12 +1,16 @@
 package pages
 
+import "path"
+
 templ Dashbaord(projects []string) {
   <body>
     <h1>Welcome</h1>
     <ul>
     for _, p := range projects {
-      <li><a href={templ.SafeURL("/" + p)}>{p}</a></li>
+      <li><a href={templ.SafeURL(path.Join("/", "project", p))}>{p}</a></li>
     }
     </ul>
+
+    <a type="button" href={templ.SafeURL("/project-new")} >New Project</a>
   </body>
 }

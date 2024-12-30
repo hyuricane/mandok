@@ -3,6 +3,7 @@ package dashboard
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -17,7 +18,9 @@ func RouteDashboard(group *echo.Group) {
 	group.GET("/login", login)
 	group.POST("/login", doLogin)
 	group.GET("/", dashboard, middlewares.CookieAuth())
-	group.GET("/:project", project, middlewares.CookieAuth())
+	group.GET("/project/:project", project, middlewares.CookieAuth())
+	group.GET("/project-new", newProject, middlewares.CookieAuth())
+	group.POST("/project-new", doNewProject, middlewares.CookieAuth())
 }
 
 func dashboard(c echo.Context) error {
@@ -46,6 +49,26 @@ func project(c echo.Context) error {
 	}
 
 	return pages.Project(name, project, routes).Render(c.Request().Context(), c.Response().Writer)
+}
+
+func newProject(c echo.Context) error {
+	return pages.NewProject(nil).Render(c.Request().Context(), c.Response().Writer)
+}
+
+func doNewProject(c echo.Context) error {
+	content := c.FormValue("json")
+	buff := bytes.NewBuffer([]byte(content))
+	config := compose.ComposeProjectYaml{}
+	err := json.NewDecoder(buff).Decode(&config)
+	if err != nil {
+		return pages.NewProject(err).Render(c.Request().Context(), c.Response().Writer)
+	}
+	projectDir, err := compose.CreateProject(c.FormValue("name"), config)
+	if err != nil {
+		return pages.NewProject(err).Render(c.Request().Context(), c.Response().Writer)
+	}
+	log.Printf("[DEBUG] new Project: %s", projectDir)
+	return c.Redirect(302, "/")
 }
 
 func login(c echo.Context) error {
