@@ -471,16 +471,27 @@ func GetRoutes(projectDir string, services ...string) (map[string]ServiceRoute, 
 						serviceRoute.Port = i
 					}
 				default:
-					if strings.HasPrefix(k, fmt.Sprintf("traefik.http.services.%s_%s.loadbalancer.sticky.", project.Name, serviceName)) {
+					pref := fmt.Sprintf("traefik.http.services.%s_%s.loadbalancer.sticky.", project.Name, serviceName)
+					if strings.HasPrefix(k, pref) {
 						if serviceRoute.Sticky == nil {
 							serviceRoute.Sticky = map[string]interface{}{}
 						}
 						// process sticky
-						k = strings.TrimLeft(k, fmt.Sprintf("traefik.http.services.%s_%s.loadbalancer.sticky.", project.Name, serviceName))
-						if strings.Contains(k, ".") {
+						k = strings.TrimPrefix(k, pref)
+						stickies := strings.Split(k, ".")
+						if len(stickies) < 2 {
 							continue
 						}
-						serviceRoute.Sticky[k] = v
+						mI, ok := serviceRoute.Sticky[stickies[0]]
+						if !ok {
+							mI = map[string]interface{}{}
+						}
+						m, ok := mI.(map[string]interface{})
+						if !ok {
+							continue
+						}
+						m[stickies[1]] = v
+						serviceRoute.Sticky[stickies[0]] = m
 					}
 				}
 			}
