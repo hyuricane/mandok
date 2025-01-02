@@ -161,6 +161,50 @@ func GetProject(projectDir string, nointerpolate ...bool) (*ComposeProjectYaml, 
 	return &prj, nil
 }
 
+func GetService(projectDir string, service string, nointerpolate ...bool) (map[string]interface{}, error) {
+	// go to project directory and trigger docker compose up
+	args := []string{"--env-file", "masked.env", "config", "--format", "json", service}
+	if len(nointerpolate) > 0 && nointerpolate[0] {
+		args = []string{"config", "--format", "json", "--no-interpolate", service}
+	}
+	cmd := exec.Command("docker-compose", args...)
+	cmd.Dir = projectDir
+	out, err := doExec(cmd)
+	if err != nil {
+		if strings.HasPrefix(err.Error(), "no such service") {
+			return nil, nil
+		}
+		return nil, err
+	}
+	prj := ComposeProjectYaml{}
+	err = json.NewDecoder(out).Decode(&prj)
+	if err != nil {
+		return nil, err
+	}
+	return prj.Services[service], nil
+}
+
+func CreateService(projectDir string, serviceName string, service map[string]interface{}) error {
+	project, err := GetProject(projectDir, true)
+	if err != nil {
+		return err
+	}
+	oldService, ok := project.Services[serviceName]
+	if ok {
+		service = mergeMap(oldService, service)
+	}
+	project.Services[serviceName] = service
+	projectName := project.Name
+	if projectName == "" {
+		projectName = path.Base(projectDir)
+	}
+	_, err = CreateProject(projectName, *project)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func GetProjects() ([]string, error) {
 	projects := []string{}
 	files, err := os.ReadDir(PROJECT_DIRS)
@@ -660,4 +704,23 @@ func doExec(cmd *exec.Cmd) (*bytes.Buffer, error) {
 		return nil, err
 	}
 	return buff, nil
+}
+
+func mergeMap(a, b map[string]interface{}) map[string]interface{} {
+	out := make(map[string]interface{}, len(a))
+	for k, v := range a {
+		out[k] = v
+	}
+	for k, v := range b {
+		if v, ok := v.(map[string]interface{}); ok {
+			if bv, ok := out[k]; ok {
+				if bv, ok := bv.(map[string]interface{}); ok {
+					out[k] = mergeMap(bv, v)
+					continue
+				}
+			}
+		}
+		out[k] = v
+	}
+	return out
 }

@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"encoding/json"
 	"log"
 
 	"github.com/labstack/echo/v4"
@@ -12,6 +13,8 @@ const PROJECT_DIRS = "projects"
 func RouteCompose(group *echo.Group) {
 	group.POST("/:name", createProject)
 	group.GET("/:name", getProject)
+	group.GET("/:name/service/:service", getService)
+	group.POST("/:name/service/:service", createService)
 	group.GET("/:name/status", getStatus)
 	group.POST("/:name/start", startProject)
 	group.POST("/:name/stop", stopProject)
@@ -63,6 +66,53 @@ func getProject(c echo.Context) error {
 		})
 	}
 	return c.JSON(200, project)
+}
+
+func createService(c echo.Context) error {
+	projectName := c.Param("name")
+	serviceName := c.Param("service")
+	projectDir := compose.HasProject(projectName)
+	if projectDir == "" {
+		return c.JSON(404, map[string]string{
+			"message": "project not found",
+		})
+	}
+
+	service := map[string]interface{}{}
+	defer c.Request().Body.Close()
+	err := json.NewDecoder(c.Request().Body).Decode(&service)
+	if err != nil {
+		return c.JSON(500, map[string]string{
+			"message": err.Error(),
+		})
+	}
+	err = compose.CreateService(projectDir, serviceName, service)
+	if err != nil {
+		return c.JSON(500, map[string]string{
+			"message": err.Error(),
+		})
+	}
+	return c.JSON(200, map[string]string{
+		"message": "ok",
+	})
+}
+
+func getService(c echo.Context) error {
+	projectName := c.Param("name")
+	serviceName := c.Param("service")
+	projectDir := compose.HasProject(projectName)
+	if projectDir == "" {
+		return c.JSON(404, map[string]string{
+			"message": "project not found",
+		})
+	}
+	service, err := compose.GetService(projectDir, serviceName)
+	if err != nil {
+		return c.JSON(500, map[string]string{
+			"message": err.Error(),
+		})
+	}
+	return c.JSON(200, service)
 }
 
 func getStatus(c echo.Context) error {
