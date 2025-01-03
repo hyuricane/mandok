@@ -1,0 +1,37 @@
+package pages
+
+import "path"
+
+templ Service(projectName string, serviceName string, service string, err error) {
+  if serviceName == "" {
+    <h1>New Service</h1>
+  } else {
+    <h1>Edit Service: {serviceName}</h1>
+  }
+  <form method="post" action={templ.SafeURL(path.Join("/", "project", projectName , "service",  serviceName))}>
+    if serviceName == "" {
+      <label for="service-name">Name: 
+        <input id="service-name" name="name" type="text">
+      </label>
+    }
+    <br/>
+    if err != nil {
+      <span style="color: red;">{err.Error()}</span>
+      <br/>
+    }
+    <label for="service-detail">
+      JSON:
+      <textarea id="service-detail" name="json">
+      if service == "" {
+        {"{}"}
+      } else {
+        {service}
+      }
+      </textarea>
+    </label>
+    <br/>
+    <button type="submit">Submit</button>
+  </form>
+  <br/>
+  <a href={templ.SafeURL(path.Join("/", "project", projectName, "route", serviceName))} >Edit Route</a>
+}

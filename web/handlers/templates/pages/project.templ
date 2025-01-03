@@ -1,86 +1,50 @@
 package pages
 
 import "inovasiriset.co.id/docker/manager/app/lib/compose"
-import "strconv"
-import "encoding/json"
-import "bytes"
-import "time"
 import "path"
+import "fmt"
 
-templ Statuses(projectStats map[string]compose.ExpectedPSData) {
-  <h2>Statuses</h2>
+templ Statuses(projectName string, projectStats map[string]compose.ServiceStatus) {
   <table>
     <thead>
       <tr>
         <th>Service</th>
+        <th>Image</th>
+        <th>Running</th>
         <th>State</th>
-        <th>Created At</th>
-        <th>Running For</th>
-        <th>Health</th>
+        <th>Route</th>
+        <th>Action</th>
       </tr>
     </thead>
     <tbody>
       for n, v := range projectStats {
-        {{
-          td, _ := time.Parse("2006-01-02 15:04:05 -0700 MST", v.CreatedAt)
-        }}
         <tr>
           <td>{n}</td>
+          <td>{v.Image}</td>
+          <td>{fmt.Sprintf("%d/%d", v.Running, v.Expected)}</td>
           <td>{v.State}</td>
-          <td>{td.Local().Format("2006-01-02 15:04:05 MST")}</td>
-          <td>{v.RunningFor}</td>
-          <td>{v.Status}</td>
+          <td>{v.Route}</td>
+          if v.State == "running" {
+            <td><a href={templ.SafeURL(path.Join("/", "project", projectName, "service", n, "edit"))}>Edit</a>|<a href={templ.SafeURL(path.Join("/", "project", projectName, "service", n, "stop"))}>Stop</a></td>
+          } else {
+            <td><a href={templ.SafeURL(path.Join("/", "project", projectName, "service", n, "edit"))}>Edit</a>|<a href={templ.SafeURL(path.Join("/", "project", projectName, "service", n, "start"))}>Start</a></td>
+          }
         </tr>
       }
+      <tr><td><a href={templ.SafeURL(path.Join("/", "project", projectName, "service-new"))}>New Service</a></td></tr>
     </tbody>
   </table>
 }
 
-templ Routes(routes map[string]compose.ServiceRoute) {
-  <h2>Routes</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>Service</th>
-        <th>Domain</th>
-        <th>Port</th>
-        <th>Stikcy</th>
-      </tr>
-    </thead>
-    <tbody>
-      for n, v := range routes {
-        <tr>
-          <td>{n}</td>
-          <td>{v.Domain}</td>
-          if v.Port != 0 {
-            <td>{strconv.Itoa(v.Port)}</td>
-          } else {
-            <td>Exposed Default</td>
-          }
-          if len(v.Sticky) == 0 {
-            <td>none</td>
-          } else {
-            {{
-              buff := bytes.NewBuffer(nil)
-              enc := json.NewEncoder(buff)
-              enc.SetEscapeHTML(true)
-              enc.SetIndent("  ", "  ")
-              enc.Encode(v.Sticky)
-            }}
-            <td>{buff.String()}</td>
-          }
-        </tr>
-      }
-    </tbody>
-  </table>
-}
-
-
-templ Project(name string, projectStats map[string]compose.ExpectedPSData, routes map[string]compose.ServiceRoute) {
+templ Project(projectName string, projectStats map[string]compose.ServiceStatus, envPlain, envSecret map[string]string) {
   <body>
-    <h1>{name}</h1>
-    @Statuses(projectStats)
-    @Routes(routes)
+    <h1><a href={templ.SafeURL(path.Join("/"))}>Home</a></h1>/<h1>{projectName}</h1>
+    <div>
+      <a href={templ.SafeURL(path.Join("/", "project", projectName, "start"))}>Start All</a>
+      <a href={templ.SafeURL(path.Join("/", "project", projectName, "down"))}>Down</a>
+    </div>
+    @Statuses(projectName, projectStats)
+    @Envs(projectName, envPlain, envSecret)
   </body>
 }
 

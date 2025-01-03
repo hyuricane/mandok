@@ -1,0 +1,54 @@
+package pages
+
+import "path"
+import "inovasiriset.co.id/docker/manager/app/lib/compose"
+import "fmt"
+import "encoding/json"
+
+templ Route(projectName string, serviceName string, route compose.ServiceRoute, err error) {
+  if serviceName == "" {
+    <h1>New Route</h1>
+  } else {
+    <h1>Edit Route: {serviceName}</h1>
+  }
+  <form method="post" action={templ.SafeURL(path.Join("/", "project", projectName , "route",  serviceName))}>
+    if serviceName == "" {
+      <label for="route-name">Name: 
+        <input id="route-name" name="name" type="text">
+      </label>
+    }
+    if err != nil {
+      <br/>
+      <span style="color: red;">{err.Error()}</span>
+    }
+    
+    <br/>
+    <label for="route-domain">
+      Domain:
+      <input id="route-domain" name="domain" type="string" value={route.Domain}>
+    </label>
+    
+    <br/>
+    <label for="route-port">
+      Port:
+      <input id="route-port" name="port" type="number" min="0" value={fmt.Sprintf("%d", route.Port)} >
+    </label>
+
+    <br/>
+    <label for="route-sticky">
+      JSON:
+      <textarea id="route-sticky" name="json">
+      if len(route.Sticky) == 0 {
+        {"{}"}
+      } else {
+        {{ 
+          jsonStikcy, _ := json.MarshalIndent(route.Sticky, "  ", "  ")
+        }}
+        {string(jsonStikcy)}
+      }
+      </textarea>
+    </label>
+    <br/>
+    <button type="submit">Submit</button>
+  </form>
+} 
