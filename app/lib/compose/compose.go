@@ -53,11 +53,14 @@ type ComposeError struct {
 	s []string
 }
 
-func (err ComposeError) Error() string {
+func (err *ComposeError) Error() string {
+	if err == nil {
+		return ""
+	}
 	return strings.Join(err.s, "\n")
 }
 
-func NewComposeError(buffErr *bytes.Buffer) *ComposeError {
+func NewComposeError(buffErr *bytes.Buffer) error {
 	str := buffErr.String()
 	if str == "" {
 		return nil
@@ -69,6 +72,9 @@ func NewComposeError(buffErr *bytes.Buffer) *ComposeError {
 			continue
 		}
 		if strings.Contains(s, "level=warning") {
+			continue
+		}
+		if s == "no configuration file provided: not found" {
 			continue
 		}
 		cleanstrs = append(cleanstrs, s)
@@ -119,6 +125,13 @@ func CreateProject(name string, projectConfig ComposeProjectYaml) (string, error
 	if err != nil {
 		return "", err
 	}
+	if len(projectConfig.Services) == 0 {
+		err = os.Rename(composeFilePath, filepath.Join(projectPath, "docker-compose.yml"))
+		if err != nil {
+			return "", err
+		}
+		return projectPath, nil
+	}
 	err = TryProject(projectPath, "docker-compose-tmp.yml")
 	if err != nil {
 		return "", err
@@ -153,7 +166,10 @@ func GetProject(projectDir string, nointerpolate ...bool) (*ComposeProjectYaml, 
 	cmd.Dir = projectDir
 	out, err := doExec(cmd)
 	if err != nil {
-		return nil, err
+		return nil, NewComposeError(bytes.NewBufferString(err.Error()))
+	}
+	if out == nil {
+		return nil, nil
 	}
 	prj := ComposeProjectYaml{}
 	err = json.NewDecoder(out).Decode(&prj)
@@ -190,10 +206,6 @@ func CreateService(projectDir string, serviceName string, service map[string]int
 	project, err := GetProject(projectDir, true)
 	if err != nil {
 		return err
-	}
-	oldService, ok := project.Services[serviceName]
-	if ok {
-		service = mergeMap(oldService, service)
 	}
 	project.Services[serviceName] = service
 	projectName := project.Name

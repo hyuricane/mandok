@@ -42,6 +42,7 @@ templ Project(projectName string, projectStats map[string]compose.ServiceStatus,
     <div>
       <a href={templ.SafeURL(path.Join("/", "project", projectName, "start"))}>Start All</a>
       <a href={templ.SafeURL(path.Join("/", "project", projectName, "down"))}>Down</a>
+      <a href={templ.SafeURL(path.Join("/", "project", projectName, "edit"))}>Edit</a>
     </div>
     @Statuses(projectName, projectStats)
     @Envs(projectName, envPlain, envSecret)
@@ -50,22 +51,45 @@ templ Project(projectName string, projectStats map[string]compose.ServiceStatus,
 
 templ NewProject(err error) {
   <h1>New Project</h1>
-  <form method="post" action={templ.SafeURL(path.Join("/", "project-new"))}>
+  <form method="post" action={templ.SafeURL(path.Join("/", "project-new"))} enctype="multipart/form-data">
     <label for="project-name">Name: 
-      <input id="project-name" name="name" type="text">
+      <input id="project-name" name="name" type="text" required>
     </label>
     <br/>
     if err != nil {
       <span style="color: red;">{err.Error()}</span>
       <br/>
     }
-    <label for="project-detail">
-      JSON:
-      <textarea id="project-detail" name="json">
-      {"{}"}
+    <br/>
+    <button type="submit">Submit</button>
+  </form>
+}
+
+
+templ EditProject(projectName, project string, format string, err error) {
+  <h1>Edit Project: {projectName}</h1>
+  <form method="post" action={templ.SafeURL(path.Join("/", "project", projectName, "edit") + "?format=" + format)}>
+    if err != nil {
+      <span style="color: red;">{err.Error()}</span>
+      <br/>
+    }
+    <label for="service-detail">
+      {format}:
+      <textarea id="service-detail" name={format}>
+      if project != "" {
+        {project}
+      } else if format == "json" {
+        {"{}"}
+      }
       </textarea>
     </label>
     <br/>
     <button type="submit">Submit</button>
   </form>
+  <br/>
+  if format == "json" {
+    <a href={templ.SafeURL(path.Join("/", "project", projectName, "edit") + "?format=yaml")} >Yaml</a>
+  } else {
+    <a href={templ.SafeURL(path.Join("/", "project", projectName, "edit") + "?format=json")} >json</a>
+  }
 }

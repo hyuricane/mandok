@@ -122,7 +122,7 @@ func Route(projectName string, serviceName string, route compose.ServiceRoute, e
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"></label><br><label for=\"route-sticky\">JSON: <textarea id=\"route-sticky\" name=\"json\">")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"></label><br><label for=\"route-sticky\">Sticky: <textarea id=\"route-sticky\" name=\"sticky\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

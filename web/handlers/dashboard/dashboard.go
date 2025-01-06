@@ -8,8 +8,10 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
+	"gopkg.in/yaml.v3"
 	"inovasiriset.co.id/docker/manager/app/lib/compose"
 	"inovasiriset.co.id/docker/manager/web/handlers/templates/pages"
 	"inovasiriset.co.id/docker/manager/web/middlewares"
@@ -24,6 +26,8 @@ func RouteDashboard(group *echo.Group) {
 	projectGroup.GET("/:project", project)
 	projectGroup.GET("/:project/start", startProject)
 	projectGroup.GET("/:project/down", downProject)
+	projectGroup.GET("/:project/edit", editProject)
+	projectGroup.POST("/:project/edit", doEditProject)
 	projectGroup.GET("/:project/service/:service/start", startService)
 	projectGroup.GET("/:project/service/:service/stop", stopService)
 	projectGroup.GET("/:project/service/:service/edit", editService)
@@ -71,19 +75,77 @@ func newProject(c echo.Context) error {
 }
 
 func doNewProject(c echo.Context) error {
-	content := c.FormValue("json")
-	buff := bytes.NewBuffer([]byte(content))
+	projectName := c.FormValue("name")
 	config := compose.ComposeProjectYaml{}
-	err := json.NewDecoder(buff).Decode(&config)
-	if err != nil {
-		return pages.NewProject(err).Render(c.Request().Context(), c.Response().Writer)
-	}
-	projectDir, err := compose.CreateProject(c.FormValue("name"), config)
+	projectDir, err := compose.CreateProject(projectName, config)
 	if err != nil {
 		return pages.NewProject(err).Render(c.Request().Context(), c.Response().Writer)
 	}
 	log.Printf("[DEBUG] new Project: %s", projectDir)
 	return c.Redirect(302, "/")
+}
+
+func editProject(c echo.Context) error {
+	projectName := c.Param("project")
+	format := c.QueryParam("format")
+	if format != "yaml" {
+		format = "json"
+	}
+	projectDir := compose.HasProject(projectName)
+	if projectDir == "" {
+		return c.Redirect(302, "/")
+	}
+	project, err := compose.GetProject(projectDir, true)
+	if err != nil {
+		return err
+	}
+
+	if project == nil {
+		return pages.EditProject(projectName, "", format, nil).Render(c.Request().Context(), c.Response().Writer)
+	}
+	var payload []byte
+	if format == "yaml" {
+		payload, err = yaml.Marshal(project)
+		if err != nil {
+			return err
+		}
+	} else {
+		payload, err = json.MarshalIndent(project, "", "  ")
+		if err != nil {
+			return err
+		}
+	}
+	return pages.EditProject(projectName, string(payload), format, nil).Render(c.Request().Context(), c.Response().Writer)
+}
+
+func doEditProject(c echo.Context) error {
+	projectName := c.Param("project")
+	projectDir := compose.HasProject(projectName)
+	if projectDir == "" {
+		return c.Redirect(302, "/")
+	}
+	format := c.QueryParam("format")
+	if format == "" {
+		format = "json"
+	}
+	payload := c.FormValue(format)
+	newProject := compose.ComposeProjectYaml{}
+	if format == "yaml" {
+		err := yaml.NewDecoder(bytes.NewBufferString(payload)).Decode(&newProject)
+		if err != nil {
+			return pages.EditProject(projectName, string(payload), format, err).Render(c.Request().Context(), c.Response().Writer)
+		}
+	} else if format == "json" {
+		err := json.NewDecoder(bytes.NewBufferString(payload)).Decode(&newProject)
+		if err != nil {
+			return pages.EditProject(projectName, string(payload), format, err).Render(c.Request().Context(), c.Response().Writer)
+		}
+	}
+	_, err := compose.CreateProject(projectName, newProject)
+	if err != nil {
+		return pages.EditProject(projectName, string(payload), format, err).Render(c.Request().Context(), c.Response().Writer)
+	}
+	return c.Redirect(302, "/project/"+projectName)
 }
 
 func startProject(c echo.Context) error {
@@ -139,6 +201,15 @@ func stopService(c echo.Context) error {
 	}
 	return c.Redirect(302, "/project/"+projectName)
 }
+
+// func bindYamlFileInput(header *multipart.FileHeader, out interface{}) error {
+// 	file, err := header.Open()
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer file.Close()
+// 	return yaml.NewDecoder(file).Decode(out)
+// }
 
 func editService(c echo.Context) error {
 	projectName := c.Param("project")
@@ -220,10 +291,11 @@ func editRoute(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	if len(routes) == 0 {
-		return c.Redirect(302, "/project/"+projectName)
+	route, ok := routes[serviceName]
+	if !ok {
+		route = compose.ServiceRoute{}
 	}
-	return pages.Route(projectName, serviceName, routes[serviceName], err).Render(c.Request().Context(), c.Response().Writer)
+	return pages.Route(projectName, serviceName, route, err).Render(c.Request().Context(), c.Response().Writer)
 }
 
 func doEditRoute(c echo.Context) error {
@@ -233,12 +305,26 @@ func doEditRoute(c echo.Context) error {
 	if projectDir == "" {
 		return c.Redirect(302, "/")
 	}
-	route := compose.ServiceRoute{}
-	err := json.NewDecoder(bytes.NewBufferString(c.FormValue("json"))).Decode(&route)
-	if err != nil {
-		return err
+	route := compose.ServiceRoute{
+		Domain: c.FormValue("domain"),
 	}
-	err = compose.RouteService(projectDir, serviceName, route)
+	if c.FormValue("port") != "" {
+		port, err := strconv.Atoi(c.FormValue("port"))
+		if err != nil {
+			return err
+		}
+		route.Port = port
+	}
+	stickyStr := c.FormValue("sticky")
+	sticky := map[string]interface{}{}
+	if stickyStr != "" {
+		err := json.NewDecoder(bytes.NewBufferString(stickyStr)).Decode(&sticky)
+		if err != nil {
+			return err
+		}
+	}
+	route.Sticky = sticky
+	err := compose.RouteService(projectDir, serviceName, route)
 	if err != nil {
 		return err
 	}
