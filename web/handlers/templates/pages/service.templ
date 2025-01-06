@@ -2,7 +2,7 @@ package pages
 
 import "path"
 
-templ Service(projectName string, serviceName string, service string, err error) {
+templ Service(projectName string, serviceName string, service string, format string, err error) {
   if serviceName == "" {
     <h1>New Service</h1>
   } else {
@@ -19,13 +19,22 @@ templ Service(projectName string, serviceName string, service string, err error)
       <span style="color: red;">{err.Error()}</span>
       <br/>
     }
+    <input type="hidden" name="format" value={format} />
+    if format == "json" {
+      <a href={templ.SafeURL(path.Join("/", "project", projectName, "service", serviceName, "edit") + "?format=yaml")} >YAML</a>
+      <br/>
+    } else {
+      <a href={templ.SafeURL(path.Join("/", "project", projectName, "service", serviceName, "edit") + "?format=json")} >JSON</a>
+      <br/>
+    }
+    <input type="hidden" name="format" value={format} />
     <label for="service-detail">
-      JSON:
-      <textarea id="service-detail" name="json">
-      if service == "" {
-        {"{}"}
-      } else {
+      {format}:
+      <textarea id="service-detail" name={format}>
+      if service != "" {
         {service}
+      } else if format  == "json" {
+        {"{}"}
       }
       </textarea>
     </label>

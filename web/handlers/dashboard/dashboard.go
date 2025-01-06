@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 	"gopkg.in/yaml.v3"
@@ -38,6 +39,9 @@ func RouteDashboard(group *echo.Group) {
 	projectGroup.POST("/:project/route/:service", doEditRoute)
 	projectGroup.POST("/:project/env/plain", setEnv)
 	projectGroup.POST("/:project/env/secret", setEnv)
+	projectGroup.POST("/:project/env", setEnv)
+	projectGroup.GET("/:project/env/secret/:name", setEnvSecret)
+	projectGroup.GET("/:project/env/delete/:name", deleteEnv)
 	projectGroup.GET("-new", newProject)
 	projectGroup.POST("-new", doNewProject)
 }
@@ -124,7 +128,7 @@ func doEditProject(c echo.Context) error {
 	if projectDir == "" {
 		return c.Redirect(302, "/")
 	}
-	format := c.QueryParam("format")
+	format := c.FormValue("format")
 	if format == "" {
 		format = "json"
 	}
@@ -214,6 +218,10 @@ func stopService(c echo.Context) error {
 func editService(c echo.Context) error {
 	projectName := c.Param("project")
 	serviceName := c.Param("service")
+	format := c.QueryParam("format")
+	if format == "" {
+		format = "json"
+	}
 	projectDir := compose.HasProject(projectName)
 	if projectDir == "" {
 		return c.Redirect(302, "/")
@@ -222,41 +230,62 @@ func editService(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	buff := bytes.NewBuffer([]byte{})
-	enc := json.NewEncoder(buff)
-	enc.SetIndent("", "  ")
-	err = enc.Encode(service)
+	var payload []byte
+	switch format {
+	case "json":
+		payload, err = json.MarshalIndent(service, "", "  ")
+	case "yaml":
+		payload, err = yaml.Marshal(service)
+	default:
+		return c.Redirect(302, c.Path())
+	}
 	if err != nil {
 		return err
 	}
-	return pages.Service(projectName, serviceName, buff.String(), err).Render(c.Request().Context(), c.Response().Writer)
+	return pages.Service(projectName, serviceName, string(payload), format, err).Render(c.Request().Context(), c.Response().Writer)
 }
 
 func addService(c echo.Context) error {
 	projectName := c.Param("project")
+	format := c.QueryParam("format")
+	if format == "" {
+		format = "json"
+	}
 	projectDir := compose.HasProject(projectName)
 	if projectDir == "" {
 		return c.Redirect(302, "/")
 	}
-	return pages.Service(projectName, "", "", nil).Render(c.Request().Context(), c.Response().Writer)
+	return pages.Service(projectName, "", "", format, nil).Render(c.Request().Context(), c.Response().Writer)
 }
 
 func doEditService(c echo.Context) error {
 	projectName := c.Param("project")
 	serviceName := c.Param("service")
-	serviceJson := c.FormValue("json")
+	format := c.FormValue("format")
+	if format == "" {
+		format = "json"
+	}
+	payload := c.FormValue(format)
 	projectDir := compose.HasProject(projectName)
 	if projectDir == "" {
 		return c.Redirect(302, "/")
 	}
 	service := map[string]interface{}{}
-	err := json.NewDecoder(bytes.NewBufferString(serviceJson)).Decode(&service)
+	var err error
+	switch format {
+	case "json":
+		err = json.NewDecoder(bytes.NewBufferString(payload)).Decode(&service)
+	case "yaml":
+		err = yaml.NewDecoder(bytes.NewBufferString(payload)).Decode(&service)
+	default:
+		return c.Redirect(302, c.Path())
+	}
 	if err != nil {
-		return err
+		return pages.Service(projectName, serviceName, string(payload), format, err).Render(c.Request().Context(), c.Response().Writer)
 	}
 	err = compose.CreateService(projectDir, serviceName, service)
 	if err != nil {
-		return err
+		return pages.Service(projectName, serviceName, string(payload), format, err).Render(c.Request().Context(), c.Response().Writer)
 	}
 	return c.Redirect(302, "/project/"+projectName)
 }
@@ -336,6 +365,7 @@ func setEnv(c echo.Context) error {
 	projectDir := compose.HasProject(projectName)
 	name := c.FormValue("name")
 	value := c.FormValue("value")
+	envs := c.FormValue("envs")
 	if projectDir == "" {
 		return c.Redirect(302, "/")
 	}
@@ -343,12 +373,79 @@ func setEnv(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	if path.Base(c.Path()) == "plain" {
-		plain[name] = value
-	} else {
-		secret[name] = value
+	if envs != "" {
+		newPlains := map[string]string{}
+		lines := strings.Split(envs, "\n")
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			if strings.HasPrefix(line, "#") {
+				continue
+			}
+			if line == "" {
+				continue
+			}
+			linec := strings.SplitN(line, "=", 2)
+			if len(linec) == 2 {
+				newPlains[linec[0]] = linec[1]
+			}
+		}
+		for k, v := range newPlains {
+			plain[k] = v
+			delete(secret, k)
+		}
+	}
+	if name != "" {
+		if path.Base(c.Path()) == "plain" {
+			plain[name] = value
+			delete(secret, name)
+		} else {
+			secret[name] = value
+			delete(plain, name)
+		}
 	}
 
+	err = compose.WriteEnvFile(projectDir, plain, secret)
+	if err != nil {
+		return err
+	}
+	return c.Redirect(302, "/project/"+projectName)
+}
+
+func setEnvSecret(c echo.Context) error {
+	projectName := c.Param("project")
+	name := c.Param("name")
+	projectDir := compose.HasProject(projectName)
+	if projectDir == "" {
+		return c.Redirect(302, "/")
+	}
+	plain, secret, err := compose.ReadEnvFile(projectDir, false)
+	if err != nil {
+		return err
+	}
+	if v, ok := plain[name]; ok {
+		secret[name] = v
+		delete(plain, name)
+	}
+	err = compose.WriteEnvFile(projectDir, plain, secret)
+	if err != nil {
+		return err
+	}
+	return c.Redirect(302, "/project/"+projectName)
+}
+
+func deleteEnv(c echo.Context) error {
+	projectName := c.Param("project")
+	name := c.Param("name")
+	projectDir := compose.HasProject(projectName)
+	if projectDir == "" {
+		return c.Redirect(302, "/")
+	}
+	plain, secret, err := compose.ReadEnvFile(projectDir, false)
+	if err != nil {
+		return err
+	}
+	delete(plain, name)
+	delete(secret, name)
 	err = compose.WriteEnvFile(projectDir, plain, secret)
 	if err != nil {
 		return err

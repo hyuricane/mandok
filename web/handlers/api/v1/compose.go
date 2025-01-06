@@ -26,6 +26,7 @@ func RouteCompose(group *echo.Group) {
 
 	group.POST("/:name/envs", setEnvs)
 	group.GET("/:name/envs", getEnvs)
+	group.DELETE("/:name/envs/:envname", deleteEnv)
 }
 
 func createProject(c echo.Context) error {
@@ -344,9 +345,11 @@ func setEnvs(c echo.Context) error {
 	// merge envs
 	for k, v := range body.Plain {
 		plain[k] = v
+		delete(secret, k)
 	}
 	for k, v := range body.Secret {
 		secret[k] = v
+		delete(plain, k)
 	}
 
 	// write to env files
@@ -380,5 +383,33 @@ func getEnvs(c echo.Context) error {
 		"message": "ok",
 		"plain":   plain,
 		"secret":  secret,
+	})
+}
+
+func deleteEnv(c echo.Context) error {
+	name := c.Param("name")
+	envname := c.Param("envname")
+	projectDir := compose.HasProject(name)
+	if projectDir == "" {
+		return c.JSON(404, map[string]string{
+			"message": "project not found",
+		})
+	}
+	plain, secret, err := compose.ReadEnvFile(projectDir, false)
+	if err != nil {
+		return c.JSON(500, map[string]string{
+			"message": err.Error(),
+		})
+	}
+	delete(plain, envname)
+	delete(secret, envname)
+	err = compose.WriteEnvFile(projectDir, plain, secret)
+	if err != nil {
+		return c.JSON(500, map[string]string{
+			"message": err.Error(),
+		})
+	}
+	return c.JSON(200, map[string]string{
+		"message": "ok",
 	})
 }

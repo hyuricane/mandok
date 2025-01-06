@@ -68,9 +68,18 @@ templ NewProject(err error) {
 
 templ EditProject(projectName, project string, format string, err error) {
   <h1>Edit Project: {projectName}</h1>
-  <form method="post" action={templ.SafeURL(path.Join("/", "project", projectName, "edit") + "?format=" + format)}>
+  
+  <form method="post" action={templ.SafeURL(path.Join("/", "project", projectName, "edit"))}>
     if err != nil {
       <span style="color: red;">{err.Error()}</span>
+      <br/>
+    }
+    <input type="hidden" name="format" value={format} />
+    if format == "json" {
+      <a href={templ.SafeURL(path.Join("/", "project", projectName, "edit") + "?format=yaml")} >YAML</a>
+      <br/>
+    } else {
+      <a href={templ.SafeURL(path.Join("/", "project", projectName, "edit") + "?format=json")} >JSON</a>
       <br/>
     }
     <label for="service-detail">
@@ -86,10 +95,4 @@ templ EditProject(projectName, project string, format string, err error) {
     <br/>
     <button type="submit">Submit</button>
   </form>
-  <br/>
-  if format == "json" {
-    <a href={templ.SafeURL(path.Join("/", "project", projectName, "edit") + "?format=yaml")} >Yaml</a>
-  } else {
-    <a href={templ.SafeURL(path.Join("/", "project", projectName, "edit") + "?format=json")} >json</a>
-  }
 }
