@@ -1,10 +1,13 @@
 package compose
 
 import (
+	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -783,6 +786,44 @@ func doExec(cmd *exec.Cmd) (*bytes.Buffer, error) {
 	return buff, nil
 }
 
+func docExecStream(cmd *exec.Cmd) (out chan string, cancel func(), err error) {
+	outpipe, err := cmd.StdoutPipe()
+	buffErr := bytes.NewBuffer(nil)
+	cmd.Stderr = buffErr
+	if err := cmd.Start(); err != nil {
+		if buffErr.Len() > 0 {
+			err = fmt.Errorf("%s", buffErr.String())
+		}
+		return nil, nil, err
+	}
+	out = make(chan string, 100)
+	go func(p io.ReadCloser) {
+		reader := bufio.NewReader(p)
+		line, err := reader.ReadString('\n')
+		for err == nil {
+			out <- line
+			line, err = reader.ReadString('\n')
+		}
+		if err != io.EOF {
+			out <- err.Error()
+		}
+		close(out)
+	}(outpipe)
+	cancel = func() {
+		var err error
+		if cmd.Cancel != nil {
+			err = cmd.Cancel()
+		}
+		if cmd.Process != nil {
+			err = cmd.Process.Kill()
+		}
+		if err != nil {
+			log.Printf("[ERROR] cancel %v", err)
+		}
+	}
+	return
+}
+
 func mergeMap(a, b map[string]interface{}) map[string]interface{} {
 	out := make(map[string]interface{}, len(a))
 	for k, v := range a {
@@ -800,4 +841,15 @@ func mergeMap(a, b map[string]interface{}) map[string]interface{} {
 		out[k] = v
 	}
 	return out
+}
+
+func LogStream(projectDir, service string, tail int) (chan string, func(), error) {
+	args := []string{"logs", "-f"}
+	if tail > -1 {
+		args = append(args, "--tail", strconv.Itoa(tail))
+	}
+	args = append(args, service)
+	cmd := exec.CommandContext(context.Background(), "docker-compose", args...)
+	cmd.Dir = projectDir
+	return docExecStream(cmd)
 }

@@ -2,7 +2,10 @@ package v1
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
+	"strconv"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 	"inovasiriset.co.id/docker/manager/app/lib/compose"
@@ -27,6 +30,8 @@ func RouteCompose(group *echo.Group) {
 	group.POST("/:name/envs", setEnvs)
 	group.GET("/:name/envs", getEnvs)
 	group.DELETE("/:name/envs/:envname", deleteEnv)
+
+	group.GET("/:name/service/:service/logs", getLogs)
 }
 
 func createProject(c echo.Context) error {
@@ -412,4 +417,67 @@ func deleteEnv(c echo.Context) error {
 	return c.JSON(200, map[string]string{
 		"message": "ok",
 	})
+}
+
+func getLogs(c echo.Context) error {
+	name := c.Param("name")
+	serviceName := c.Param("service")
+	tail := 10
+	if tails := c.QueryParam("tail"); tails != "" {
+		if tailI, err := strconv.Atoi(tails); err == nil {
+			tail = tailI
+		}
+	}
+	projectDir := compose.HasProject(name)
+	if projectDir == "" {
+		return c.JSON(404, map[string]string{
+			"message": "project not found",
+		})
+	}
+	statuses, err := compose.GetStatus(projectDir, false, serviceName)
+	if err != nil {
+		return c.JSON(500, map[string]string{
+			"message": err.Error(),
+		})
+	}
+	status, ok := statuses[serviceName]
+	if !ok {
+		return c.JSON(404, map[string]string{
+			"message": "service not found",
+		})
+	}
+	if status.Running == 0 {
+		return c.JSON(404, map[string]string{
+			"message": "service not running",
+		})
+	}
+	// get logs
+
+	// return sse
+	c.Response().Header().Set(echo.HeaderContentType, "text/event-stream")
+	c.Response().Header().Set("Cache-Control", "no-cache")
+	c.Response().Header().Set("Connection", "keep-alive")
+	c.Response().WriteHeader(200)
+
+	ch, cancel, err := compose.LogStream(projectDir, serviceName, tail)
+	if err != nil {
+		return c.JSON(500, map[string]string{
+			"message": err.Error(),
+		})
+	}
+	defer cancel()
+	for {
+		select {
+		case <-c.Request().Context().Done():
+			return nil
+		case lines := <-ch:
+			if lines == "" { // assume closed
+				return nil
+			}
+			for _, line := range strings.Split(lines, "\n") {
+				c.Response().Writer.Write([]byte(fmt.Sprintf("event: log\ndata: %s\n\n", line)))
+			}
+			c.Response().Flush()
+		}
+	}
 }
