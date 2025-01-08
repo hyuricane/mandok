@@ -30,6 +30,8 @@ func RouteDashboard(group *echo.Group) {
 	projectGroup.GET("/:project/edit", editProject)
 	projectGroup.POST("/:project/edit", doEditProject)
 	projectGroup.GET("/:project/service/:service/start", startService)
+	projectGroup.GET("/:project/service/:service/restart", restartService)
+	projectGroup.GET("/:project/service/:service/restart", pullStartService)
 	projectGroup.GET("/:project/service/:service/stop", stopService)
 	projectGroup.GET("/:project/service/:service/edit", editService)
 	projectGroup.GET("/:project/service-new", addService)
@@ -187,6 +189,34 @@ func startService(c echo.Context) error {
 		return c.Redirect(302, "/")
 	}
 	err := compose.StartProject(projectDir, false, false, serviceName)
+	if err != nil {
+		return err
+	}
+	return c.Redirect(302, "/project/"+projectName)
+}
+
+func restartService(c echo.Context) error {
+	projectName := c.Param("project")
+	serviceName := c.Param("service")
+	projectDir := compose.HasProject(projectName)
+	if projectDir == "" {
+		return c.Redirect(302, "/")
+	}
+	err := compose.StartProject(projectDir, true, false, serviceName)
+	if err != nil {
+		return err
+	}
+	return c.Redirect(302, "/project/"+projectName)
+}
+
+func pullStartService(c echo.Context) error {
+	projectName := c.Param("project")
+	serviceName := c.Param("service")
+	projectDir := compose.HasProject(projectName)
+	if projectDir == "" {
+		return c.Redirect(302, "/")
+	}
+	err := compose.StartProject(projectDir, false, true, serviceName)
 	if err != nil {
 		return err
 	}
