@@ -34,6 +34,7 @@ func RouteDashboard(group *echo.Group) {
 	projectGroup.GET("/:project/service/:service/edit", editService)
 	projectGroup.GET("/:project/service-new", addService)
 	projectGroup.POST("/:project/service/:service", doEditService)
+	projectGroup.GET("/:project/service/:service/log", getLog)
 	projectGroup.POST("/:project/service", doAddService)
 	projectGroup.GET("/:project/route/:service", editRoute)
 	projectGroup.POST("/:project/route/:service", doEditRoute)
@@ -451,6 +452,26 @@ func deleteEnv(c echo.Context) error {
 		return err
 	}
 	return c.Redirect(302, "/project/"+projectName)
+}
+
+func getLog(c echo.Context) error {
+	projectName := c.Param("project")
+	serviceName := c.Param("service")
+	tail := 10
+	if c.QueryParam("tail") != "" {
+		tail, _ = strconv.Atoi(c.QueryParam("tail"))
+	}
+	projectDir := compose.HasProject(projectName)
+	if projectDir == "" {
+		return c.Redirect(302, "/")
+	}
+	out, cancel, err := compose.LogStream(projectDir, serviceName, tail)
+	if err != nil {
+		return err
+	}
+	defer cancel()
+	pages.StreamLog(out).Render(c.Request().Context(), c.Response().Writer)
+	return nil
 }
 
 func login(c echo.Context) error {
