@@ -1,7 +1,9 @@
 package pages
 
+import "inovasiriset.co.id/docker/manager/web/handlers/templates/layouts"
+
 templ Login(usermame string) {
-  <body>
+  @layouts.AuthLayout("login") {
     <form method="post">
       <table>
         <tr>
@@ -27,5 +29,5 @@ templ Login(usermame string) {
       </table>
       <button type="submit">Login</button>
     </form>
-  </body>
+  }
 }

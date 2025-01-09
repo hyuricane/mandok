@@ -2,64 +2,30 @@ package pages
 
 import "inovasiriset.co.id/docker/manager/app/lib/compose"
 import "path"
-import "fmt"
-
-templ Statuses(projectName string, projectStats map[string]compose.ServiceStatus) {
-  <table>
-    <thead>
-      <tr>
-        <th>Service</th>
-        <th>Image</th>
-        <th>Running</th>
-        <th>State</th>
-        <th>Route</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      for n, v := range projectStats {
-        <tr>
-          <td>{n}</td>
-          <td>{v.Image}</td>
-          <td>{fmt.Sprintf("%d/%d", v.Running, v.Expected)}</td>
-          <td>{v.State}</td>
-          <td><a href={templ.SafeURL("//" + v.Route)} target="_blank">{v.Route}</a></td>
-          if v.State == "running" {
-            <td>
-              <a href={templ.SafeURL(path.Join("/", "project", projectName, "service", n, "edit"))}>Edit</a> | 
-              <a href={templ.SafeURL(path.Join("/", "project", projectName, "service", n, "stop"))}>Stop</a> | 
-              <a href={templ.SafeURL(path.Join("/", "project", projectName, "service", n, "pull"))}>pull</a> | 
-              <a href={templ.SafeURL(path.Join("/", "project", projectName, "service", n, "restart"))}>restart</a> | 
-              <a href={templ.SafeURL(path.Join("/", "project", projectName, "service", n, "log"))} target="_blank">log</a>
-            </td>
-          } else {
-            <td>
-              <a href={templ.SafeURL(path.Join("/", "project", projectName, "service", n, "edit"))}>Edit</a> | 
-              <a href={templ.SafeURL(path.Join("/", "project", projectName, "service", n, "start"))}>Start</a></td>
-          }
-        </tr>
-      }
-      <tr><td><a href={templ.SafeURL(path.Join("/", "project", projectName, "service-new"))}>New Service</a></td></tr>
-    </tbody>
-  </table>
-}
+import "inovasiriset.co.id/docker/manager/web/handlers/templates/components"
+import "inovasiriset.co.id/docker/manager/web/handlers/templates/layouts"
 
 templ Project(projectName string, projectStats map[string]compose.ServiceStatus, envPlain, envSecret map[string]string) {
-  <body>
-    <h1>
-      <a href={templ.SafeURL(path.Join("/"))}>Home</a> / {projectName}
-    </h1>
+  @layouts.MainLayout(projectName, []layouts.Breadcrumb{
+    { Text: "Home", Link: "/" },
+    { Text: projectName },
+  }...){
+    <h1>{projectName}</h1>
     <div>
       <a href={templ.SafeURL(path.Join("/", "project", projectName, "start"))}>Start All</a>
       <a href={templ.SafeURL(path.Join("/", "project", projectName, "down"))}>Down</a>
       <a href={templ.SafeURL(path.Join("/", "project", projectName, "edit"))}>Edit</a>
     </div>
-    @Statuses(projectName, projectStats)
-    @Envs(projectName, envPlain, envSecret)
-  </body>
+    @components.Statuses(projectName, projectStats)
+    @components.Envs(projectName, envPlain, envSecret)
+  }
 }
 
 templ NewProject(err error) {
+  @layouts.MainLayout("New Project",[]layouts.Breadcrumb{
+    { Text: "Home", Link: "/" },
+    { Text: "New Project" },
+  }...){
   <h1>New Project</h1>
   <form method="post" action={templ.SafeURL(path.Join("/", "project-new"))} enctype="multipart/form-data">
     <label for="project-name">Name: 
@@ -73,10 +39,16 @@ templ NewProject(err error) {
     <br/>
     <button type="submit">Submit</button>
   </form>
+  }
 }
 
 
 templ EditProject(projectName, project string, format string, err error) {
+  @layouts.MainLayout(projectName + ": Edit Raw", []layouts.Breadcrumb{
+    { Text: "Home", Link: "/" },
+    { Text: projectName, Link: path.Join("/project", projectName) },
+    { Text: "Edit Raw" },
+  }...){
   <h1>Edit Project: {projectName}</h1>
   
   <form method="post" action={templ.SafeURL(path.Join("/", "project", projectName, "edit"))}>
@@ -105,4 +77,5 @@ templ EditProject(projectName, project string, format string, err error) {
     <br/>
     <button type="submit">Submit</button>
   </form>
+  }
 }

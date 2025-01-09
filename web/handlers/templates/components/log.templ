@@ -1,11 +1,11 @@
-package pages
+package components
 
 templ StreamLog(logs chan string) {
   <div>
     for log := range logs {
       @templ.Flush() {
         <pre>{log}</pre>
-			}
+      }
     }
   </div>
 }

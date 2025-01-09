@@ -14,6 +14,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"gopkg.in/yaml.v3"
 	"inovasiriset.co.id/docker/manager/app/lib/compose"
+	"inovasiriset.co.id/docker/manager/web/handlers/templates/components"
 	"inovasiriset.co.id/docker/manager/web/handlers/templates/pages"
 	"inovasiriset.co.id/docker/manager/web/middlewares"
 )
@@ -500,7 +501,7 @@ func getLog(c echo.Context) error {
 		return err
 	}
 	defer cancel()
-	pages.StreamLog(out).Render(c.Request().Context(), c.Response().Writer)
+	components.StreamLog(out).Render(c.Request().Context(), c.Response().Writer)
 	return nil
 }
 

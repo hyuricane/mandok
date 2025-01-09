@@ -1,17 +1,18 @@
 package pages
 
 import "path"
+import "inovasiriset.co.id/docker/manager/web/handlers/templates/layouts"
 
 templ Service(projectName string, serviceName string, service string, format string, err error) {
-  
+  @layouts.MainLayout(projectName + "-"+serviceName, []layouts.Breadcrumb{
+    { Text: "Home", Link: "/" },
+    { Text: projectName, Link: path.Join("/project", projectName) },
+    { Text: serviceName },
+  }...){
   if serviceName == "" {
-    <h1>
-      <a href={templ.SafeURL(path.Join("/"))}>Home</a> / <a href={templ.SafeURL(path.Join("/project", projectName))}>{projectName}</a> / New Service
-    </h1>
+    <h1>New Service</h1>
   } else {
-    <h1>
-      <a href={templ.SafeURL(path.Join("/"))}>Home</a> / <a href={templ.SafeURL(path.Join("/project", projectName))}>{projectName}</a> / {serviceName}
-    </h1>
+    <h1>Edit Service: {serviceName}</h1>
   }
   <form method="post" action={templ.SafeURL(path.Join("/", "project", projectName , "service",  serviceName))}>
     if serviceName == "" {
@@ -48,4 +49,5 @@ templ Service(projectName string, serviceName string, service string, format str
   </form>
   <br/>
   <a href={templ.SafeURL(path.Join("/", "project", projectName, "route", serviceName))} >Edit Route</a>
+  }
 }
