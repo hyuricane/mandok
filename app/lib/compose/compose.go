@@ -259,7 +259,26 @@ func GetStatus(projectDir string, all bool, services ...string) (map[string]Serv
 			ss.Image = imageI.(string)
 		}
 		if labelsI, ok := v["labels"]; ok {
-			labels := labelsI.(map[string]interface{})
+			var labels map[string]interface{}
+			switch ls := labelsI.(type) {
+			case map[string]interface{}:
+				labels = ls
+			case []string:
+				labels = map[string]interface{}{}
+				for _, l := range ls {
+					parts := strings.Split(l, "=")
+					if len(parts) != 2 {
+						continue
+					}
+					labels[parts[0]] = parts[1]
+				}
+			default:
+				continue
+			}
+			if len(labels) == 0 {
+				log.Printf("[WARNING] labels is not map[string]interface{} %v", labelsI)
+				continue
+			}
 			if route, ok := labels["traefik.http.routers."+prj.Name+"_"+k+".rule"]; ok {
 				ss.Route = route.(string)
 				ss.Route = strings.TrimPrefix(ss.Route, "Host(`")
