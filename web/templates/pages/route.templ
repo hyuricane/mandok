@@ -4,15 +4,17 @@ import "path"
 import "inovasiriset.co.id/docker/manager/app/lib/compose"
 import "fmt"
 import "encoding/json"
-import "inovasiriset.co.id/docker/manager/web/handlers/templates/layouts"
+import "inovasiriset.co.id/docker/manager/web/templates/layouts"
+import "inovasiriset.co.id/docker/manager/web/templates/components"
 
 templ Route(projectName string, serviceName string, route compose.ServiceRoute, err error) {
-  @layouts.MainLayout(projectName + "-" + serviceName + " route", []layouts.Breadcrumb{
+  @layouts.MainLayout(projectName + "-" + serviceName + " route"){
+  @components.Breadcrumbs([]components.Breadcrumb{
     { Text: "Home", Link: "/" },
     { Text: projectName, Link: path.Join("/project", projectName) },
     { Text: serviceName, Link: path.Join("/project", projectName, "service", serviceName) }, 
     { Text: "route" },
-  }...){
+  }...)
   if serviceName == "" {
     <h1>New Route</h1>
   } else {

@@ -1,14 +1,16 @@
 package pages
 
 import "path"
-import "inovasiriset.co.id/docker/manager/web/handlers/templates/layouts"
+import "inovasiriset.co.id/docker/manager/web/templates/layouts"
+import "inovasiriset.co.id/docker/manager/web/templates/components"
 
 templ Service(projectName string, serviceName string, service string, format string, err error) {
-  @layouts.MainLayout(projectName + "-"+serviceName, []layouts.Breadcrumb{
+  @layouts.MainLayout(projectName + "-"+serviceName){
+  @components.Breadcrumbs([]components.Breadcrumb{
     { Text: "Home", Link: "/" },
     { Text: projectName, Link: path.Join("/project", projectName) },
     { Text: serviceName },
-  }...){
+  }...)
   if serviceName == "" {
     <h1>New Service</h1>
   } else {

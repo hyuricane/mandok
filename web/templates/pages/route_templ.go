@@ -12,7 +12,8 @@ import "path"
 import "inovasiriset.co.id/docker/manager/app/lib/compose"
 import "fmt"
 import "encoding/json"
-import "inovasiriset.co.id/docker/manager/web/handlers/templates/layouts"
+import "inovasiriset.co.id/docker/manager/web/templates/layouts"
+import "inovasiriset.co.id/docker/manager/web/templates/components"
 
 func Route(projectName string, serviceName string, route compose.ServiceRoute, err error) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
@@ -47,6 +48,19 @@ func Route(projectName string, serviceName string, route compose.ServiceRoute, e
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
+			templ_7745c5c3_Err = components.Breadcrumbs([]components.Breadcrumb{
+				{Text: "Home", Link: "/"},
+				{Text: projectName, Link: path.Join("/project", projectName)},
+				{Text: serviceName, Link: path.Join("/project", projectName, "service", serviceName)},
+				{Text: "route"},
+			}...).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
 			if serviceName == "" {
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<h1>New Route</h1>")
 				if templ_7745c5c3_Err != nil {
@@ -60,7 +74,7 @@ func Route(projectName string, serviceName string, route compose.ServiceRoute, e
 				var templ_7745c5c3_Var3 string
 				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(serviceName)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/handlers/templates/pages/route.templ`, Line: 19, Col: 32}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/route.templ`, Line: 21, Col: 32}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 				if templ_7745c5c3_Err != nil {
@@ -98,7 +112,7 @@ func Route(projectName string, serviceName string, route compose.ServiceRoute, e
 				var templ_7745c5c3_Var5 string
 				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(err.Error())
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/handlers/templates/pages/route.templ`, Line: 29, Col: 44}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/route.templ`, Line: 31, Col: 44}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 				if templ_7745c5c3_Err != nil {
@@ -116,7 +130,7 @@ func Route(projectName string, serviceName string, route compose.ServiceRoute, e
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(route.Domain)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/handlers/templates/pages/route.templ`, Line: 35, Col: 78}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/route.templ`, Line: 37, Col: 78}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
@@ -129,7 +143,7 @@ func Route(projectName string, serviceName string, route compose.ServiceRoute, e
 			var templ_7745c5c3_Var7 string
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", route.Port))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/handlers/templates/pages/route.templ`, Line: 41, Col: 99}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/route.templ`, Line: 43, Col: 99}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {
@@ -143,7 +157,7 @@ func Route(projectName string, serviceName string, route compose.ServiceRoute, e
 				var templ_7745c5c3_Var8 string
 				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs("{}")
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/handlers/templates/pages/route.templ`, Line: 49, Col: 13}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/route.templ`, Line: 51, Col: 13}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
@@ -155,7 +169,7 @@ func Route(projectName string, serviceName string, route compose.ServiceRoute, e
 				var templ_7745c5c3_Var9 string
 				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(string(jsonStikcy))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/handlers/templates/pages/route.templ`, Line: 54, Col: 27}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/route.templ`, Line: 56, Col: 27}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 				if templ_7745c5c3_Err != nil {
@@ -168,12 +182,7 @@ func Route(projectName string, serviceName string, route compose.ServiceRoute, e
 			}
 			return templ_7745c5c3_Err
 		})
-		templ_7745c5c3_Err = layouts.MainLayout(projectName+"-"+serviceName+" route", []layouts.Breadcrumb{
-			{Text: "Home", Link: "/"},
-			{Text: projectName, Link: path.Join("/project", projectName)},
-			{Text: serviceName, Link: path.Join("/project", projectName, "service", serviceName)},
-			{Text: "route"},
-		}...).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = layouts.MainLayout(projectName+"-"+serviceName+" route").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -1,14 +1,14 @@
 package pages
 
 import "path"
-import "inovasiriset.co.id/docker/manager/web/handlers/templates/layouts"
+import "inovasiriset.co.id/docker/manager/web/templates/layouts"
 
 templ Dashbaord(projects []string) {
   @layouts.MainLayout("Mandok") {
     <h1>Projects</h1>
-    <ul>
+    <ul hx-boost="true">
     for _, p := range projects {
-      <li><a href={templ.SafeURL(path.Join("/", "project", p))}>{p}</a></li>
+      <li><a href={templ.SafeURL(path.Join("/", "project", p))} hx-target="body">{p}</a></li>
     }
     </ul>
 

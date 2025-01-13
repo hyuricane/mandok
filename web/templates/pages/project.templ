@@ -2,14 +2,15 @@ package pages
 
 import "inovasiriset.co.id/docker/manager/app/lib/compose"
 import "path"
-import "inovasiriset.co.id/docker/manager/web/handlers/templates/components"
-import "inovasiriset.co.id/docker/manager/web/handlers/templates/layouts"
+import "inovasiriset.co.id/docker/manager/web/templates/components"
+import "inovasiriset.co.id/docker/manager/web/templates/layouts"
 
 templ Project(projectName string, projectStats map[string]compose.ServiceStatus, envPlain, envSecret map[string]string) {
-  @layouts.MainLayout(projectName, []layouts.Breadcrumb{
-    { Text: "Home", Link: "/" },
-    { Text: projectName },
-  }...){
+  @layouts.MainLayout(projectName, ){
+    @components.Breadcrumbs([]components.Breadcrumb{
+      { Text: "Home", Link: "/" },
+      { Text: projectName },
+    }...)
     <h1>{projectName}</h1>
     <div>
       <a href={templ.SafeURL(path.Join("/", "project", projectName, "start"))}>Start All</a>
@@ -22,10 +23,11 @@ templ Project(projectName string, projectStats map[string]compose.ServiceStatus,
 }
 
 templ NewProject(err error) {
-  @layouts.MainLayout("New Project",[]layouts.Breadcrumb{
+  @layouts.MainLayout("New Project"){
+  @components.Breadcrumbs([]components.Breadcrumb{
     { Text: "Home", Link: "/" },
     { Text: "New Project" },
-  }...){
+  }...)
   <h1>New Project</h1>
   <form method="post" action={templ.SafeURL(path.Join("/", "project-new"))} enctype="multipart/form-data">
     <label for="project-name">Name: 
@@ -44,11 +46,12 @@ templ NewProject(err error) {
 
 
 templ EditProject(projectName, project string, format string, err error) {
-  @layouts.MainLayout(projectName + ": Edit Raw", []layouts.Breadcrumb{
+  @layouts.MainLayout(projectName + ": Edit Raw"){
+  @components.Breadcrumbs([]components.Breadcrumb{
     { Text: "Home", Link: "/" },
     { Text: projectName, Link: path.Join("/project", projectName) },
     { Text: "Edit Raw" },
-  }...){
+  }...)
   <h1>Edit Project: {projectName}</h1>
   
   <form method="post" action={templ.SafeURL(path.Join("/", "project", projectName, "edit"))}>

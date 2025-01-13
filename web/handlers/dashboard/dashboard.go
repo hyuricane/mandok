@@ -14,9 +14,9 @@ import (
 	"github.com/labstack/echo/v4"
 	"gopkg.in/yaml.v3"
 	"inovasiriset.co.id/docker/manager/app/lib/compose"
-	"inovasiriset.co.id/docker/manager/web/handlers/templates/components"
-	"inovasiriset.co.id/docker/manager/web/handlers/templates/pages"
 	"inovasiriset.co.id/docker/manager/web/middlewares"
+	"inovasiriset.co.id/docker/manager/web/templates/components"
+	"inovasiriset.co.id/docker/manager/web/templates/pages"
 )
 
 func RouteDashboard(group *echo.Group) {
