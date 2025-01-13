@@ -18,13 +18,33 @@ type ServiceRoute struct {
 
 var NETWORK = "mandok"
 
+var TRAEFIK = false
+var TRAEFIK_SSL = false
+var TRAEFIK_HTTP_ENTRYPOINT = "web"
+var TRAEFIK_HTTPS_ENTRYPOINT = "websecure"
+
 func init() {
 	if os.Getenv("NETWORK") != "" {
 		NETWORK = os.Getenv("NETWORK")
 	}
+	if traefikStr := os.Getenv("TRAEFIK"); traefikStr != "" {
+		TRAEFIK, _ = strconv.ParseBool(traefikStr)
+	}
+	if traefikSSLStr := os.Getenv("TRAEFIK_SSL"); traefikSSLStr != "" {
+		TRAEFIK_SSL, _ = strconv.ParseBool(traefikSSLStr)
+	}
+	if traefikHTTPSEntrypoint := os.Getenv("TRAEFIK_HTTP_ENTRYPOINT"); traefikHTTPSEntrypoint != "" {
+		TRAEFIK_HTTP_ENTRYPOINT = traefikHTTPSEntrypoint
+	}
+	if traefikHTTPSEntrypoint := os.Getenv("TRAEFIK_HTTPS_ENTRYPOINT"); traefikHTTPSEntrypoint != "" {
+		TRAEFIK_HTTPS_ENTRYPOINT = traefikHTTPSEntrypoint
+	}
 }
 
 func RouteService(projectDir string, serviceName string, route ServiceRoute) error {
+	if !TRAEFIK {
+		return nil
+	}
 	if projectDir == "" {
 		return nil
 	}
@@ -54,14 +74,15 @@ func RouteService(projectDir string, serviceName string, route ServiceRoute) err
 		}
 	}
 	labels["traefik.enable"] = "true"
-	labels["traefik.http.routers."+project.Name+"_"+serviceName+".rule"] = "Host(`" + route.Domain + "`)"
 	labels["traefik.docker.network"] = NETWORK
+	// port
 	if route.Port != 0 {
 		labels["traefik.http.services."+project.Name+"_"+serviceName+".loadbalancer.server.port"] = route.Port
 	} else {
 		// delete label port
 		delete(labels, "traefik.http.services."+project.Name+"_"+serviceName+".loadbalancer.server.port")
 	}
+	// sticky
 	for k, v := range route.Sticky {
 		stickyName := k
 		switch s := v.(type) {
@@ -73,6 +94,21 @@ func RouteService(projectDir string, serviceName string, route ServiceRoute) err
 			labels[fmt.Sprintf("traefik.http.services.%s_%s.loadbalancer.sticky.%s", project.Name, serviceName, stickyName)] = v
 		}
 	}
+
+	// http
+	labels["traefik.http.routers."+project.Name+"_"+serviceName+".rule"] = "Host(`" + route.Domain + "`)"
+	labels["traefik.http.routers."+project.Name+"_"+serviceName+".entrypoints"] = TRAEFIK_HTTP_ENTRYPOINT
+
+	if TRAEFIK_SSL {
+		labels["traefik.http.routers."+project.Name+"_"+serviceName+"-secure.rule"] = "Host(`" + route.Domain + "`)"
+		labels["traefik.http.routers."+project.Name+"_"+serviceName+"-secure.entrypoints"] = TRAEFIK_HTTPS_ENTRYPOINT
+		labels["traefik.http.routers."+project.Name+"_"+serviceName+"-secure.tls"] = true
+
+		// redirect to https
+		labels["traefik.http.routers."+project.Name+"_"+serviceName+".middlewares"] = "https_redirect"
+		labels["traefik.http.middlewares.https_redirect.redirectscheme.scheme"] = "https"
+	}
+
 	service["labels"] = labels
 
 	// attach to traefik network
