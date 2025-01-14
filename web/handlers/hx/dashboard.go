@@ -8,9 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path"
 	"strconv"
-	"strings"
 
 	"github.com/labstack/echo/v4"
 	"gopkg.in/yaml.v3"
@@ -29,7 +27,6 @@ func RouteDashboard(group *echo.Group) {
 	projectGroup.Use(middlewares.CookieAuth("/hx/login"))
 	projectGroup.GET("/:project", project)
 	projectGroup.GET("/:project/status", status)
-	projectGroup.GET("/:project/envs", envs)
 	projectGroup.GET("/:project/start", startProject)
 	projectGroup.GET("/:project/down", downProject)
 	projectGroup.GET("/:project/edit", editProject)
@@ -43,17 +40,20 @@ func RouteDashboard(group *echo.Group) {
 	projectGroup.POST("/:project/service", doAddService)
 	projectGroup.GET("/:project/route/:service", editRoute)
 	projectGroup.POST("/:project/route/:service", doEditRoute)
-	projectGroup.POST("/:project/env/plain", setEnv)
-	projectGroup.POST("/:project/env/secret", setEnv)
-	projectGroup.POST("/:project/env", setEnv)
-	projectGroup.GET("/:project/env/secret/:name", setEnvSecret)
-	projectGroup.GET("/:project/env/delete/:name", deleteEnv)
+
+	projectGroup.GET("/:project/envs", envs)
+	projectGroup.POST("/:project/envs/plain", setEnv)
+	projectGroup.POST("/:project/envs/secret", setEnv)
+	projectGroup.POST("/:project/envs", setEnv)
+	projectGroup.GET("/:project/envs/secret/:name", setEnvSecret)
+	projectGroup.GET("/:project/envs/delete/:name", deleteEnv)
+
 	projectGroup.GET("-new", newProject)
 	projectGroup.POST("-new", doNewProject)
 }
 
 func dashboard(c echo.Context) error {
-	renderLayout := c.Get("hx-request") == nil
+	renderLayout := c.Get("hx-request") != "true"
 	log.Printf("[DEBUG] renderLayout: %t, %s", renderLayout, c.Get("hx-request"))
 
 	projects, err := compose.GetProjects()
@@ -65,7 +65,7 @@ func dashboard(c echo.Context) error {
 }
 
 func project(c echo.Context) error {
-	renderLayout := c.Get("hx-request") == nil
+	renderLayout := c.Get("hx-request") != "true"
 	name := c.Param("project")
 	projectDir := compose.HasProject(name)
 	if projectDir == "" {
@@ -75,12 +75,12 @@ func project(c echo.Context) error {
 }
 
 func newProject(c echo.Context) error {
-	renderLayout := c.Get("hx-request") == nil
+	renderLayout := c.Get("hx-request") != "true"
 	return hxPages.NewProject(renderLayout, nil).Render(c.Request().Context(), c.Response().Writer)
 }
 
 func doNewProject(c echo.Context) error {
-	renderLayout := c.Get("hx-request") == nil
+	renderLayout := c.Get("hx-request") != "true"
 	projectName := c.FormValue("name")
 	config := compose.ComposeProjectYaml{}
 	projectDir, err := compose.CreateProject(projectName, config)
@@ -378,101 +378,6 @@ func doEditRoute(c echo.Context) error {
 	return c.Redirect(302, "/hx/project/"+projectName)
 }
 
-func setEnv(c echo.Context) error {
-	projectName := c.Param("project")
-	projectDir := compose.HasProject(projectName)
-	name := c.FormValue("name")
-	value := c.FormValue("value")
-	envs := c.FormValue("envs")
-	if projectDir == "" {
-		return c.Redirect(302, "/hx/")
-	}
-	plain, secret, err := compose.ReadEnvFile(projectDir, false)
-	if err != nil {
-		return err
-	}
-	if envs != "" {
-		newPlains := map[string]string{}
-		lines := strings.Split(envs, "\n")
-		for _, line := range lines {
-			line = strings.TrimSpace(line)
-			if strings.HasPrefix(line, "#") {
-				continue
-			}
-			if line == "" {
-				continue
-			}
-			linec := strings.SplitN(line, "=", 2)
-			if len(linec) == 2 {
-				newPlains[linec[0]] = linec[1]
-			}
-		}
-		for k, v := range newPlains {
-			plain[k] = v
-			delete(secret, k)
-		}
-	}
-	if name != "" {
-		if path.Base(c.Path()) == "plain" {
-			plain[name] = value
-			delete(secret, name)
-		} else {
-			secret[name] = value
-			delete(plain, name)
-		}
-	}
-
-	err = compose.WriteEnvFile(projectDir, plain, secret)
-	if err != nil {
-		return err
-	}
-	return c.Redirect(302, "/hx/project/"+projectName)
-}
-
-func setEnvSecret(c echo.Context) error {
-	projectName := c.Param("project")
-	name := c.Param("name")
-	projectDir := compose.HasProject(projectName)
-	if projectDir == "" {
-		return c.Redirect(302, "/hx/")
-	}
-	plain, secret, err := compose.ReadEnvFile(projectDir, false)
-	if err != nil {
-		return err
-	}
-	if v, ok := plain[name]; ok {
-		secret[name] = v
-		delete(plain, name)
-	}
-	err = compose.WriteEnvFile(projectDir, plain, secret)
-	if err != nil {
-		return err
-	}
-	return c.Redirect(302, "/hx/project/"+projectName)
-}
-
-func deleteEnv(c echo.Context) error {
-	projectName := c.Param("project")
-	name := c.Param("name")
-	projectDir := compose.HasProject(projectName)
-	if projectDir == "" {
-		return c.Redirect(302, "/hx/")
-	}
-	plain, secret, err := compose.ReadEnvFile(projectDir, false)
-	if err != nil {
-		return err
-	}
-	delete(plain, name)
-	delete(secret, name)
-	err = compose.WriteEnvFile(projectDir, plain, secret)
-	if err != nil {
-		return err
-	}
-
-	hxRedirect(c, "/hx/project/"+projectName)
-	return c.Redirect(302, "/hx/project/"+projectName)
-}
-
 func getLog(c echo.Context) error {
 	projectName := c.Param("project")
 	serviceName := c.Param("service")
@@ -494,7 +399,7 @@ func getLog(c echo.Context) error {
 }
 
 func login(c echo.Context) error {
-	renderLayout := c.Get("hx-request") == nil
+	renderLayout := c.Get("hx-request") != "true"
 	username := c.QueryParam("username")
 	var err error = nil
 	return hxPages.Login(renderLayout, username, err).Render(c.Request().Context(), c.Response().Writer)
@@ -513,7 +418,7 @@ func logout(c echo.Context) error {
 }
 
 func doLogin(c echo.Context) error {
-	renderLayout := c.Get("hx-request") == nil
+	renderLayout := c.Get("hx-request") != "true"
 	username := c.FormValue("username")
 	password := c.FormValue("password")
 	if username != os.Getenv("API_USERNAME") || password != os.Getenv("API_PASSWORD") {

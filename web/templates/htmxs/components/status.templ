@@ -42,9 +42,13 @@ templ Statuses(projectName string, projectStats map[string]compose.ServiceStatus
           </td>
         </tr>
       }
-      <tr><td><a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service-new"))} hx-get={path.Join("/hx", "project", projectName, "service-new")} hx-target="#page">New Service</a></td></tr>
+      <tr>
+        <td><a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service-new"))} hx-get={path.Join("/hx", "project", projectName, "service-new")} hx-target="#page" hx-push-url="true">New Service</a></td>
+      </tr>
       if err != nil {
-        <tr><td>@Error(err)</td></tr>
+      <tr>
+        <td>@Error(err, "status-err")</td>
+      </tr>
       }
     </tbody>
   </table>

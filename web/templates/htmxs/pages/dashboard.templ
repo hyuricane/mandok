@@ -6,24 +6,21 @@ import "inovasiriset.co.id/docker/manager/web/templates/htmxs/components"
 
 templ Dashboard(layout bool, projects []string, err error) {
   if layout {
-    @layouts.HTMX() {
-      @hxDashboard(projects, err)
+    @layouts.HTMX("Mandok Projects") {
+      @Dashboard(false, projects, err)
     } 
-  } else {
-    @hxDashboard(projects, err)
+    {{ return }}
   }
-}
 
-templ hxDashboard(projects []string, err error) {
   <title>Mandok Projects</title>
-  <div id="page">
+  <div id="page" hx-swap-oob="outerHTML">
     <h1>Projects</h1>
-    @components.Error(err)
+    @components.Error(err, "dashboard-err")
     <ul>
     for _, p := range projects {
       <li><a href={templ.SafeURL(path.Join("/hx", "project", p))} hx-get={path.Join("/hx", "project", p)} hx-push-url="true" hx-target="#page">{p}</a></li>
     }
     </ul>
-    <a type="button" href="/hx/project-new" hx-get="/hx/project-new" hx-push-url="true" hx-target="#page" >New Project</a>
+    <a type="button" href="/hx/project-new" hx-get="/hx/project-new" hx-push-url="true" hx-target="#page" hx-swap="outerHTML" >New Project</a>
   </div>
 }

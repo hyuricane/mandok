@@ -1,15 +1,13 @@
 package layouts
-templ HTMX() {
+templ HTMX(title string) {
   <html>
   <head>
-  <title>Mandok</title>
+  <title>{title}</title>
   <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
   </head>
   <body>
-  <div id="breadcrumbs"></div>
-  <div id="page">
+  <div id="breadcrumbs" hx-swap-oob="true" style="display: block; margin-top: 12px; margin-bottom: 12px;"></div>
   {children...}
-  </div>
   </body>
   </html>
 }

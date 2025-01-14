@@ -6,13 +6,13 @@ type Breadcrumb struct {
 }
 
 templ Breadcrumbs(breadcrumbs ...Breadcrumb) {
-  <div id="breadcrumbs" hx-swap-oob="true">
+  <div id="breadcrumbs" hx-swap-oob="true" style="display: block; margin-top: 12px; margin-bottom: 12px;">
     for i, b := range breadcrumbs {
       if i != 0 {
         {" / "}
       }
       if b.Link != "" {
-        <a href={templ.SafeURL(b.Link)} hx-get={b.Link} hx-push-url="true" hx-target="#page">{b.Text}</a>
+        <a href={templ.SafeURL(b.Link)} hx-get={b.Link} hx-push-url="true" hx-target="#page" hx-swap="outerHTML">{b.Text}</a>
       } else {
         <span>{b.Text}</span>
       }

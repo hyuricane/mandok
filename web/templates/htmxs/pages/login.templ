@@ -5,17 +5,13 @@ import "inovasiriset.co.id/docker/manager/web/templates/htmxs/components"
 
 templ Login(layout bool, username string, err error) {
   if layout {
-    @layouts.HTMX() {
-      @hxLogin(username, err)
+    @layouts.HTMX("Login") {
+      @Login(false, username, err)
     }
-  } else {
-    @hxLogin(username, err)
+    {{ return }}
   }
-}
-
-templ hxLogin(username string, err error) {
   <title>Login</title>
-  <div id="page">
+  <div id="page" hx-swap-oob="outerHTML">
     <form hx-post="#" method="post" hx-target="#page">
       <table>
         <tr>
@@ -39,7 +35,7 @@ templ hxLogin(username string, err error) {
           </td>
         </tr>
       </table>
-      @components.Error(err)
+      @components.Error(err, "login-err")
       <button type="submit">Login</button>
     </form>
   </div>

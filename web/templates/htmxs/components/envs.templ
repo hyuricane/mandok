@@ -3,7 +3,7 @@ package components
 import "path"
 
 templ Envs(projectName string, plain, secret map[string]string, err error) {
-  <div id="project-envs">
+  <div id="project-envs" hx-get={path.Join("/hx", "project", projectName, "envs")} hx-swap-oob="outerHTML" hx-trigger="updateEnvs from:body">
   <h2>Envs</h2>
   <h3>Plain</h3>
   <table>
@@ -20,23 +20,23 @@ templ Envs(projectName string, plain, secret map[string]string, err error) {
           <td>{k}</td>
           <td>{v}</td>
           <td>
-            <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "env", "delete", k))}>delete</a> |
-            <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "env", "secret", k))}>secret</a>
+            <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "envs", "delete", k))} hx-get={path.Join("/hx", "project", projectName, "envs", "delete", k)} hx-confirm="delete this env var?" hx-swap="none">delete</a> |
+            <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "envs", "secret", k))} hx-get={path.Join("/hx", "project", projectName, "envs", "secret", k)} hx-confirm="make this env var secret?" hx-swap="none">secret</a>
           </td>
         </tr>
       }
     </tbody>
     <tfoot>
-      <form action={templ.SafeURL(path.Join("/hx", "project", projectName, "env", "plain"))} method="post">
-        <tr>
+        <tr hx-include="find input">
           <td><input name="name" /></td>
           <td><input name="value"/></td>
-          <td><button type="submit">+</button></td>
+          <td>
+            <button hx-post={path.Join("/hx", "project", projectName, "envs", "plain")} hx-swap="none">+</button>
+          </td>
         </tr>
-      </form>
     </tfoot>
   </table>
-  <form action={templ.SafeURL(path.Join("/hx", "project", projectName, "env"))} method="post">
+  <form hx-post={path.Join("/hx", "project", projectName, "envs")}>
     <label for="plain_envs">envs:</label>
     <br/>
     <textarea id="plain_envs" name="envs"></textarea>
@@ -56,12 +56,12 @@ templ Envs(projectName string, plain, secret map[string]string, err error) {
       for k := range secret {
         <tr>
           <td>{k}</td>
-          <td><a href={templ.SafeURL(path.Join("/hx", "project", projectName, "env", "delete", k))}>delete</a></td>
+          <td><a href={templ.SafeURL(path.Join("/hx", "project", projectName, "envs", "delete", k))} hx-get={path.Join("/hx", "project", projectName, "envs", "delete", k)} hx-swap="none">delete</a></td>
         </tr>
       }
     </tbody>
     <tfoot>
-      <form action={templ.SafeURL(path.Join("/hx", "project", projectName, "env", "secret"))} method="post">
+      <form hx-post={path.Join("/hx", "project", projectName, "envs", "secret")} method="post">
         <tr>
           <td><input name="name" /></td>
           <td><input name="value"/></td>
