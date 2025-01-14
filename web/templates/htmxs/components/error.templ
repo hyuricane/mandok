@@ -1,0 +1,7 @@
+package components
+
+templ Error(err error) {
+  if err != nil {
+  <span style="display: block; color: red; font-size: small;">{err.Error()}</span>
+  }
+}

@@ -7,6 +7,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	apiHandlers "inovasiriset.co.id/docker/manager/web/handlers/api/v1"
 	"inovasiriset.co.id/docker/manager/web/handlers/dashboard"
+	"inovasiriset.co.id/docker/manager/web/handlers/hx"
 	"inovasiriset.co.id/docker/manager/web/middlewares"
 )
 
@@ -22,6 +23,7 @@ func ListenHttp() error {
 		c.Echo().DefaultHTTPErrorHandler(err, c)
 	}
 	dashboard.RouteDashboard(app.Group(""))
+	hx.RouteDashboard(app.Group("/hx"))
 
 	apiHandlers.RouteDocker(app.Group("/api/docker", middlewares.MiddlewareAuth()))
 	apiHandlers.RouteCompose(app.Group("/api/compose", middlewares.MiddlewareAuth()))

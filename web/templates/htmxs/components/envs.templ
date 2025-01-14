@@ -1,0 +1,74 @@
+package components
+
+import "path"
+
+templ Envs(projectName string, plain, secret map[string]string, err error) {
+  <div id="project-envs">
+  <h2>Envs</h2>
+  <h3>Plain</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Value</th>
+        <th>...</th>
+      </tr>
+    </thead>
+    <tbody>
+      for k, v := range plain {
+        <tr>
+          <td>{k}</td>
+          <td>{v}</td>
+          <td>
+            <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "env", "delete", k))}>delete</a> |
+            <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "env", "secret", k))}>secret</a>
+          </td>
+        </tr>
+      }
+    </tbody>
+    <tfoot>
+      <form action={templ.SafeURL(path.Join("/hx", "project", projectName, "env", "plain"))} method="post">
+        <tr>
+          <td><input name="name" /></td>
+          <td><input name="value"/></td>
+          <td><button type="submit">+</button></td>
+        </tr>
+      </form>
+    </tfoot>
+  </table>
+  <form action={templ.SafeURL(path.Join("/hx", "project", projectName, "env"))} method="post">
+    <label for="plain_envs">envs:</label>
+    <br/>
+    <textarea id="plain_envs" name="envs"></textarea>
+    <br/>
+    <button type="submit">add all</button>
+  </form>
+
+  <h3>Secret</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>...</th>
+      </tr>
+    </thead>
+    <tbody>
+      for k := range secret {
+        <tr>
+          <td>{k}</td>
+          <td><a href={templ.SafeURL(path.Join("/hx", "project", projectName, "env", "delete", k))}>delete</a></td>
+        </tr>
+      }
+    </tbody>
+    <tfoot>
+      <form action={templ.SafeURL(path.Join("/hx", "project", projectName, "env", "secret"))} method="post">
+        <tr>
+          <td><input name="name" /></td>
+          <td><input name="value"/></td>
+          <td><button type="submit">+</button></td>
+        </tr>
+      </form>
+    </tfoot>
+  </table>
+  </div>
+}

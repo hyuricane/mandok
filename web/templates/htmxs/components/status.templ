@@ -1,0 +1,52 @@
+package components
+
+import "inovasiriset.co.id/docker/manager/app/lib/compose"
+import "fmt"
+import "path"
+
+
+templ Statuses(projectName string, projectStats map[string]compose.ServiceStatus, err error) {
+  <div id="project-status" hx-get={path.Join("/hx", "project", projectName, "status")} hx-trigger="updateStatus from:body" hx-swap="outerHTML">
+  <h2>Statuses</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Service</th>
+        <th>Image</th>
+        <th>Running</th>
+        <th>State</th>
+        <th>Route</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      for n, v := range projectStats {
+        <tr id={fmt.Sprintf("project-status-%s", n)}>
+          <td>{n}</td>
+          <td>{v.Image}</td>
+          <td>{fmt.Sprintf("%d/%d", v.Running, v.Expected)}</td>
+          <td>{v.State}</td>
+          <td><a href={templ.SafeURL("//" + v.Route)} target="_blank">{v.Route}</a></td>
+            <td>
+              <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service", n, "edit"))} hx-get={path.Join("/hx", "project", projectName, "service", n, "edit")} hx-target="#page" hx-push-url="true">Edit</a>
+              if v.State == "running" {
+                | <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service", n, "stop"))} hx-get={path.Join("/hx", "project", projectName, "service", n, "stop")} hx-swap="none">Stop</a>
+                | <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service", n, "start") + "?pull=true")} hx-get={path.Join("/hx", "project", projectName, "service", n, "start") + "?pull=true"} hx-swap="none">pull</a>
+                | <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service", n, "start") + "?restart=true")} hx-get={path.Join("/hx", "project", projectName, "service", n, "start") + "?restart=true"} hx-swap="none">restart</a>
+              } else {
+                | <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service", n, "start"))} hx-get={path.Join("/hx", "project", projectName, "service", n, "start")} hx-swap="none">Start</a>
+              }
+              if v.State != "" {
+                | <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service", n, "log"))} target="_blank">log</a>
+              }
+          </td>
+        </tr>
+      }
+      <tr><td><a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service-new"))} hx-get={path.Join("/hx", "project", projectName, "service-new")} hx-target="#page">New Service</a></td></tr>
+      if err != nil {
+        <tr><td>@Error(err)</td></tr>
+      }
+    </tbody>
+  </table>
+  </div>
+}

@@ -1,0 +1,15 @@
+package layouts
+templ HTMX() {
+  <html>
+  <head>
+  <title>Mandok</title>
+  <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+  </head>
+  <body>
+  <div id="breadcrumbs"></div>
+  <div id="page">
+  {children...}
+  </div>
+  </body>
+  </html>
+}
