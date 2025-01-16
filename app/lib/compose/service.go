@@ -9,9 +9,9 @@ import (
 
 func GetService(projectDir string, service string, nointerpolate ...bool) (map[string]interface{}, error) {
 	// go to project directory and trigger docker compose up
-	args := []string{"--env-file", "masked.env", "config", "--format", "json", service}
+	args := []string{"--env-file", "masked.env", "config", "--format", "json", "--no-path-resolution", service}
 	if len(nointerpolate) > 0 && nointerpolate[0] {
-		args = []string{"config", "--format", "json", "--no-interpolate", service}
+		args = []string{"config", "--format", "json", "--no-path-resolution", "--no-interpolate", service}
 	}
 	cmd := exec.Command("docker-compose", args...)
 	cmd.Dir = projectDir
