@@ -210,7 +210,7 @@ func GetRoutes(projectDir string, services ...string) (map[string]ServiceRoute, 
 	if projectDir == "" {
 		return nil, nil
 	}
-	args := []string{"config", "--format", "json"}
+	args := []string{"config", "--format", "json", "--no-path-resolution"}
 	args = append(args, services...)
 
 	cmd := exec.Command("docker-compose", args...)

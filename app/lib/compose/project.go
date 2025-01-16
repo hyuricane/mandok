@@ -81,9 +81,9 @@ func HasProject(name string) string {
 
 func GetProject(projectDir string, nointerpolate ...bool) (*ComposeProjectYaml, error) {
 	// go to project directory and trigger docker compose up
-	args := []string{"--env-file", "masked.env", "config", "--format", "json"}
+	args := []string{"--env-file", "masked.env", "config", "--format", "json", "--no-path-resolution"}
 	if len(nointerpolate) > 0 && nointerpolate[0] {
-		args = []string{"config", "--format", "json", "--no-interpolate"}
+		args = []string{"config", "--format", "json", "--no-interpolate", "--no-path-resolution"}
 	}
 	cmd := exec.Command("docker-compose", args...)
 	cmd.Dir = projectDir

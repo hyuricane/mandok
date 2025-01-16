@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 // dry run docker compose up
@@ -50,6 +51,12 @@ func ReadEnvFile(projectDir string, masked bool) (plain map[string]string, secre
 		if string(line) == "### secret" {
 			isPlain = false
 			continue
+		} else if string(line) == "### compound-plain" {
+			isPlain = true
+			continue
+		} else if string(line) == "### compound-secret" {
+			isPlain = false
+			continue
 		}
 		if isPlain {
 			parts := bytes.Split(line, []byte("="))
@@ -71,6 +78,20 @@ func ReadEnvFile(projectDir string, masked bool) (plain map[string]string, secre
 func WriteEnvFile(projectDir string, plain, secret map[string]string) error {
 	realBs := bytes.Buffer{}
 	maskedBs := bytes.Buffer{}
+	compoundPlain := map[string]string{}
+	compoundSecret := map[string]string{}
+	for k, v := range plain {
+		if strings.Contains(v, "${") {
+			compoundPlain[k] = v
+			delete(plain, k)
+		}
+	}
+	for k, v := range secret {
+		if strings.Contains(v, "${") {
+			compoundSecret[k] = v
+			delete(secret, k)
+		}
+	}
 	for k, v := range plain {
 		realBs.WriteString(k)
 		realBs.WriteString("=")
@@ -85,6 +106,31 @@ func WriteEnvFile(projectDir string, plain, secret map[string]string) error {
 	realBs.WriteString("\n### secret\n")
 	maskedBs.WriteString("\n### secret\n")
 	for k, v := range secret {
+		realBs.WriteString(k)
+		realBs.WriteString("=")
+		realBs.WriteString(v)
+		realBs.WriteString("\n")
+
+		maskedBs.WriteString(k)
+		maskedBs.WriteString("=******\n")
+	}
+
+	realBs.WriteString("\n### compound-plain\n")
+	maskedBs.WriteString("\n### compound-plain\n")
+	for k, v := range compoundPlain {
+		realBs.WriteString(k)
+		realBs.WriteString("=")
+		realBs.WriteString(v)
+		realBs.WriteString("\n")
+
+		maskedBs.WriteString(k)
+		maskedBs.WriteString("=")
+		maskedBs.WriteString(v)
+		maskedBs.WriteString("\n")
+	}
+	realBs.WriteString("\n### compound-secret\n")
+	maskedBs.WriteString("\n### compound-secret\n")
+	for k, v := range compoundSecret {
 		realBs.WriteString(k)
 		realBs.WriteString("=")
 		realBs.WriteString(v)
