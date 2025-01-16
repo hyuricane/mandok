@@ -6,7 +6,7 @@ import "path"
 
 
 templ Statuses(projectName string, projectStats map[string]compose.ServiceStatus, err error) {
-  <div id="project-status" hx-get={path.Join("/hx", "project", projectName, "status")} hx-trigger="updateStatus from:body" hx-swap="outerHTML">
+  <div id="project-status" hx-get={path.Join("/hx", "project", projectName, "status")} hx-trigger="updateStatus from:body" hx-swap="outerHTML"  hx-indicator="#page-load-indicator">
   <h2>Statuses</h2>
   <table>
     <thead>
@@ -30,11 +30,12 @@ templ Statuses(projectName string, projectStats map[string]compose.ServiceStatus
             <td>
               <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service", n, "edit"))} hx-get={path.Join("/hx", "project", projectName, "service", n, "edit")} hx-target="#page" hx-push-url="true">Edit</a>
               if v.State == "running" {
-                | <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service", n, "stop"))} hx-get={path.Join("/hx", "project", projectName, "service", n, "stop")} hx-swap="none">Stop</a>
-                | <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service", n, "start") + "?pull=true")} hx-get={path.Join("/hx", "project", projectName, "service", n, "start") + "?pull=true"} hx-swap="none">pull</a>
-                | <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service", n, "start") + "?restart=true")} hx-get={path.Join("/hx", "project", projectName, "service", n, "start") + "?restart=true"} hx-swap="none">restart</a>
+                | <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service", n, "stop"))} hx-get={path.Join("/hx", "project", projectName, "service", n, "stop")} hx-swap="none" hx-indicator="#page-load-indicator">Stop</a>
+                | <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service", n, "start") + "?pull=true")} hx-get={path.Join("/hx", "project", projectName, "service", n, "start") + "?pull=true"} hx-swap="none" hx-indicator="#page-load-indicator">pull</a>
+                | <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service", n, "start") + "?restart=true")} hx-get={path.Join("/hx", "project", projectName, "service", n, "start") + "?restart=true"} hx-swap="none" hx-indicator="#page-load-indicator">restart</a>
+                | <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service", n, "start") + "?restart=true")} hx-get={path.Join("/hx", "project", projectName, "service", n, "start")} hx-swap="none" hx-indicator="#page-load-indicator">soft start</a>
               } else {
-                | <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service", n, "start"))} hx-get={path.Join("/hx", "project", projectName, "service", n, "start")} hx-swap="none">Start</a>
+                | <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service", n, "start"))} hx-get={path.Join("/hx", "project", projectName, "service", n, "start")} hx-swap="none" hx-indicator="#page-load-indicator">Start</a>
               }
               if v.State != "" {
                 | <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service", n, "log"))} target="_blank">log</a>

@@ -3,7 +3,7 @@ package components
 import "path"
 
 templ Envs(projectName string, plain, secret map[string]string, err error) {
-  <div id="project-envs" hx-get={path.Join("/hx", "project", projectName, "envs")} hx-swap-oob="outerHTML" hx-trigger="updateEnvs from:body">
+  <div id="project-envs" hx-get={path.Join("/hx", "project", projectName, "envs")} hx-swap-oob="outerHTML" hx-trigger="updateEnvs from:body"  hx-indicator="#page-load-indicator">
   <h2>Envs</h2>
   <h3>Plain</h3>
   <table>
@@ -27,16 +27,16 @@ templ Envs(projectName string, plain, secret map[string]string, err error) {
       }
     </tbody>
     <tfoot>
-        <tr hx-include="find input">
+        <tr id="add-env-plain" hx-include="#add-env-plain>td>input">
           <td><input name="name" /></td>
           <td><input name="value"/></td>
           <td>
-            <button hx-post={path.Join("/hx", "project", projectName, "envs", "plain")} hx-swap="none">+</button>
+            <button type="button" hx-post={path.Join("/hx", "project", projectName, "envs", "plain")}  hx-swap="none" hx-indicator="#page-load-indicator">+</button>
           </td>
         </tr>
     </tfoot>
   </table>
-  <form hx-post={path.Join("/hx", "project", projectName, "envs")}>
+  <form hx-post={path.Join("/hx", "project", projectName, "envs")}  hx-swap="none" hx-indicator="#page-load-indicator">
     <label for="plain_envs">envs:</label>
     <br/>
     <textarea id="plain_envs" name="envs"></textarea>
@@ -61,13 +61,11 @@ templ Envs(projectName string, plain, secret map[string]string, err error) {
       }
     </tbody>
     <tfoot>
-      <form hx-post={path.Join("/hx", "project", projectName, "envs", "secret")} method="post">
-        <tr>
-          <td><input name="name" /></td>
-          <td><input name="value"/></td>
-          <td><button type="submit">+</button></td>
-        </tr>
-      </form>
+      <tr id="add-env-secret" hx-include="#add-env-secret>td>input">
+        <td><input name="name" /></td>
+        <td><input name="value"/></td>
+        <td><button type="button" hx-post={path.Join("/hx", "project", projectName, "envs", "secret")} hx-swap="none" hx-indicator="#page-load-indicator">+</button></td>
+      </tr>
     </tfoot>
   </table>
   </div>

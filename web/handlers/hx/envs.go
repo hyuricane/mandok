@@ -96,7 +96,8 @@ func setEnv(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	return c.Redirect(302, "/hx/project/"+projectName)
+	c.Response().Header().Add("HX-Trigger", "updateEnvs")
+	return nil
 }
 
 func setEnvSecret(c echo.Context) error {
@@ -118,7 +119,8 @@ func setEnvSecret(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	return c.Redirect(302, "/hx/project/"+projectName)
+	c.Response().Header().Add("HX-Trigger", "updateEnvs")
+	return nil
 }
 
 func deleteEnv(c echo.Context) error {
@@ -139,6 +141,6 @@ func deleteEnv(c echo.Context) error {
 		return err
 	}
 
-	hxRedirect(c, "/hx/project/"+projectName)
-	return c.Redirect(302, "/hx/project/"+projectName)
+	c.Response().Header().Add("HX-Trigger", "updateEnvs")
+	return nil
 }

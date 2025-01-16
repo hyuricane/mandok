@@ -44,7 +44,7 @@ func Envs(projectName string, plain, secret map[string]string, err error) templ.
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" hx-swap-oob=\"outerHTML\" hx-trigger=\"updateEnvs from:body\"><h2>Envs</h2><h3>Plain</h3><table><thead><tr><th>Name</th><th>Value</th><th>...</th></tr></thead> <tbody>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" hx-swap-oob=\"outerHTML\" hx-trigger=\"updateEnvs from:body\" hx-indicator=\"#page-load-indicator\"><h2>Envs</h2><h3>Plain</h3><table><thead><tr><th>Name</th><th>Value</th><th>...</th></tr></thead> <tbody>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -124,20 +124,20 @@ func Envs(projectName string, plain, secret map[string]string, err error) templ.
 				return templ_7745c5c3_Err
 			}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</tbody><tfoot><tr hx-include=\"find input\"><td><input name=\"name\"></td><td><input name=\"value\"></td><td><button hx-post=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</tbody><tfoot><tr id=\"add-env-plain\" hx-include=\"#add-env-plain&gt;td&gt;input\"><td><input name=\"name\"></td><td><input name=\"value\"></td><td><button type=\"button\" hx-post=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(path.Join("/hx", "project", projectName, "envs", "plain"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/htmxs/components/envs.templ`, Line: 34, Col: 86}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/htmxs/components/envs.templ`, Line: 34, Col: 100}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" hx-swap=\"none\">+</button></td></tr></tfoot></table><form hx-post=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" hx-swap=\"none\" hx-indicator=\"#page-load-indicator\">+</button></td></tr></tfoot></table><form hx-post=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -150,7 +150,7 @@ func Envs(projectName string, plain, secret map[string]string, err error) templ.
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"><label for=\"plain_envs\">envs:</label><br><textarea id=\"plain_envs\" name=\"envs\"></textarea><br><button type=\"submit\">add all</button></form><h3>Secret</h3><table><thead><tr><th>Name</th><th>...</th></tr></thead> <tbody>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" hx-swap=\"none\" hx-indicator=\"#page-load-indicator\"><label for=\"plain_envs\">envs:</label><br><textarea id=\"plain_envs\" name=\"envs\"></textarea><br><button type=\"submit\">add all</button></form><h3>Secret</h3><table><thead><tr><th>Name</th><th>...</th></tr></thead> <tbody>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -195,20 +195,20 @@ func Envs(projectName string, plain, secret map[string]string, err error) templ.
 				return templ_7745c5c3_Err
 			}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</tbody><tfoot><form hx-post=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</tbody><tfoot><tr id=\"add-env-secret\" hx-include=\"#add-env-secret&gt;td&gt;input\"><td><input name=\"name\"></td><td><input name=\"value\"></td><td><button type=\"button\" hx-post=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var14 string
 		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(path.Join("/hx", "project", projectName, "envs", "secret"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/htmxs/components/envs.templ`, Line: 64, Col: 79}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/htmxs/components/envs.templ`, Line: 67, Col: 101}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" method=\"post\"><tr><td><input name=\"name\"></td><td><input name=\"value\"></td><td><button type=\"submit\">+</button></td></tr></form></tfoot></table></div>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" hx-swap=\"none\" hx-indicator=\"#page-load-indicator\">+</button></td></tr></tfoot></table></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
