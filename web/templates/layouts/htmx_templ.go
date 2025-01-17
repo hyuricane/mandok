@@ -42,7 +42,7 @@ func HTMX(title string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</title><script src=\"https://unpkg.com/htmx.org@2.0.4\" integrity=\"sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+\" crossorigin=\"anonymous\"></script></head><body><div id=\"page-load-indicator\" class=\"htmx-indicator\" style=\"float: right; width: auto;\">loading...</div><div id=\"breadcrumbs\" hx-swap-oob=\"true\" style=\"display: block; margin-top: 12px; margin-bottom: 12px;\"></div>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</title><script src=\"https://unpkg.com/htmx.org@2.0.4\" integrity=\"sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+\" crossorigin=\"anonymous\"></script></head><body hx-indicator=\"#page-load-indicator\"><div id=\"page-load-indicator\" class=\"htmx-indicator\" style=\"float: right; width: auto;\">loading...</div><div id=\"breadcrumbs\" hx-swap-oob=\"true\" style=\"display: block; margin-top: 12px; margin-bottom: 12px;\"></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
