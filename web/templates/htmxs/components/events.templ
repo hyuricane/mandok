@@ -1,0 +1,7 @@
+package components
+
+import "inovasiriset.co.id/docker/manager/app/lib/compose"
+
+templ StreamEvents(event compose.DockerComposeEvent) {
+  <span>{event.Action} {event.Type} {event.Service}</span>
+}

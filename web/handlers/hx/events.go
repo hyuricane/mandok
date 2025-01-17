@@ -1,23 +1,12 @@
 package hx
 
 import (
-	"encoding/json"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"inovasiriset.co.id/docker/manager/app/lib/compose"
 )
 
-type DockerComposeEvent struct {
-	Action  string `json:"action"`
-	Service string `json:"service"`
-	Time    string `json:"time"`
-	ID      string `json:"id"`
-	Type    string `json:"type"`
-}
-
-func (e DockerComposeEvent) String() string {
-	return e.Action + " " + e.Type + " " + e.Service
-}
 func getEvents(c echo.Context) error {
 	projectName := c.Param("project")
 	projectDir := compose.HasProject(projectName)
@@ -33,20 +22,30 @@ func getEvents(c echo.Context) error {
 	c.Response().Header().Set("Content-Type", "text/event-stream")
 	c.Response().Header().Set("Cache-Control", "no-cache")
 	c.Response().Header().Set("Connection", "keep-alive")
+	c.Response().Header().Set("Transfer-Encoding", "chunked")
+	c.Response().WriteHeader(200)
+	keepAlive := time.NewTicker(30 * time.Second)
+	defer keepAlive.Stop()
 
 	for {
 		select {
 		case <-c.Request().Context().Done():
 			return nil
-		case eventJson := <-ch:
-			event := DockerComposeEvent{}
-			err := json.Unmarshal([]byte(eventJson), &event)
-			if err != nil {
+		case <-keepAlive.C:
+			if _, err = c.Response().Writer.Write([]byte(":keep-alive\n\n")); err != nil {
 				return err
 			}
-			c.Response().Write([]byte("event: docker-compose\n"))
-			c.Response().Write([]byte("data: " + event.String() + "\n\n"))
-			c.Response().Flush()
+		case event, ok := <-ch:
+			if !ok {
+				return nil
+			}
+			if _, err = c.Response().Writer.Write([]byte("event: " + event.Type + "\n")); err != nil {
+				return err
+			}
+			if _, err = c.Response().Writer.Write([]byte("data: <p remove-me=\"1s\" class=\"event\">" + event.Action + " " + event.Service + "</p>\n\n")); err != nil {
+				return err
+			}
 		}
+		c.Response().Flush()
 	}
 }

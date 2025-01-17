@@ -53,6 +53,9 @@ templ Project(layout bool, projectName string, err error) {
   }...)
   <title>{projectName}</title>
   <div id="page" hx-swap-oob="outerHTML">
+    <div id="project-events" hx-ext="sse" sse-connect={path.Join("/hx", "project", projectName, "events")} hx-indicator="none" style="float: right;">
+      <div sse-swap="container" hx-swap="beforebegin" hx-target="#page-load-indicator>#events"></div>
+    </div>
     <div>
       <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "start"))} hx-get={path.Join("/hx", "project", projectName, "start")} hx-swap="none" hx-indicator="#page-load-indicator">Start All</a>
       <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "down"))} hx-get={path.Join("/hx", "project", projectName, "down")} hx-swap="none" hx-indicator="#page-load-indicator">Down</a>
