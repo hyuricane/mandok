@@ -7,11 +7,11 @@ import "inovasiriset.co.id/docker/manager/web/templates/htmxs/components"
 templ Dashboard(layout bool, projects []string, err error) {
   if layout {
     @layouts.HTMX("Mandok Projects") {
-      @Dashboard(false, projects, err)
+      <div id="page" hx-get={path.Join("/hx")} hx-swap="outerHTML" hx-trigger="load" hx-indicator="#page-load-indicator"></div>
     } 
     {{ return }}
   }
-
+  @components.Breadcrumbs()
   <title>Mandok Projects</title>
   <div id="page" hx-swap-oob="outerHTML">
     <h1>Projects</h1>

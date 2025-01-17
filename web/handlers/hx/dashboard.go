@@ -40,7 +40,7 @@ func RouteDashboard(group *echo.Group) {
 	projectGroup.GET("/:project/service-new", addService)
 	projectGroup.POST("/:project/service/:service", doEditService)
 	projectGroup.GET("/:project/service/:service/log", getLog)
-	projectGroup.POST("/:project/service", doAddService)
+	projectGroup.POST("/:project/service", doEditService)
 
 	projectGroup.GET("/:project/route/:service", editRoute)
 	projectGroup.POST("/:project/route/:service", doEditRoute)
@@ -57,7 +57,7 @@ func RouteDashboard(group *echo.Group) {
 }
 
 func dashboard(c echo.Context) error {
-	renderLayout := c.Get("hx-request") != "true"
+	renderLayout := c.Request().Header.Get("hx-request") != "true"
 	projects, err := compose.GetProjects()
 	if err != nil {
 		return err
@@ -68,23 +68,25 @@ func dashboard(c echo.Context) error {
 }
 
 func project(c echo.Context) error {
-	renderLayout := c.Get("hx-request") != "true"
+	renderLayout := c.Request().Header.Get("hx-request") != "true"
 	name := c.Param("project")
 	projectDir := compose.HasProject(name)
 	if projectDir == "" {
 		hxRedirect(c, "/hx")
 		return c.Redirect(302, "/hx/")
 	}
+	log.Printf("[DEBUG] project %v", name)
+	log.Printf("[DEBUG] renderLayout %t", renderLayout)
 	return hxPages.Project(renderLayout, name, nil).Render(c.Request().Context(), c.Response().Writer)
 }
 
 func newProject(c echo.Context) error {
-	renderLayout := c.Get("hx-request") != "true"
+	renderLayout := c.Request().Header.Get("hx-request") != "true"
 	return hxPages.NewProject(renderLayout, nil).Render(c.Request().Context(), c.Response().Writer)
 }
 
 func doNewProject(c echo.Context) error {
-	renderLayout := c.Get("hx-request") != "true"
+	renderLayout := c.Request().Header.Get("hx-request") != "true"
 	projectName := c.FormValue("name")
 	config := compose.ComposeProjectYaml{}
 	projectDir, err := compose.CreateProject(projectName, config)
@@ -98,6 +100,7 @@ func doNewProject(c echo.Context) error {
 }
 
 func editProject(c echo.Context) error {
+	renderLayout := c.Request().Header.Get("hx-request") != "true"
 	projectName := c.Param("project")
 	format := c.QueryParam("format")
 	if format != "yaml" {
@@ -109,32 +112,34 @@ func editProject(c echo.Context) error {
 	}
 	project, err := compose.GetProject(projectDir, true)
 	if err != nil {
-		return err
+		return hxPages.EditProject(renderLayout, projectName, "", format, err).Render(c.Request().Context(), c.Response().Writer)
 	}
 
 	if project == nil {
-		return pages.EditProject(projectName, "", format, nil).Render(c.Request().Context(), c.Response().Writer)
+		return hxPages.EditProject(renderLayout, projectName, "", format, nil).Render(c.Request().Context(), c.Response().Writer)
 	}
 	var payload []byte
 	if format == "yaml" {
 		payload, err = yaml.Marshal(project)
 		if err != nil {
-			return err
+			return hxPages.EditProject(renderLayout, projectName, string(payload), format, err).Render(c.Request().Context(), c.Response().Writer)
 		}
 	} else {
 		payload, err = json.MarshalIndent(project, "", "  ")
 		if err != nil {
-			return err
+			return hxPages.EditProject(renderLayout, projectName, string(payload), format, err).Render(c.Request().Context(), c.Response().Writer)
 		}
 	}
-	return pages.EditProject(projectName, string(payload), format, nil).Render(c.Request().Context(), c.Response().Writer)
+	return hxPages.EditProject(renderLayout, projectName, string(payload), format, nil).Render(c.Request().Context(), c.Response().Writer)
 }
 
 func doEditProject(c echo.Context) error {
+	renderLayout := c.Request().Header.Get("hx-request") != "true"
 	projectName := c.Param("project")
 	projectDir := compose.HasProject(projectName)
 	if projectDir == "" {
-		return c.Redirect(302, "/hx/")
+		hxRedirect(c, "/hx")
+		return c.Redirect(302, "/hx")
 	}
 	format := c.FormValue("format")
 	if format == "" {
@@ -145,18 +150,19 @@ func doEditProject(c echo.Context) error {
 	if format == "yaml" {
 		err := yaml.NewDecoder(bytes.NewBufferString(payload)).Decode(&newProject)
 		if err != nil {
-			return pages.EditProject(projectName, string(payload), format, err).Render(c.Request().Context(), c.Response().Writer)
+			return hxPages.EditProject(renderLayout, projectName, string(payload), format, err).Render(c.Request().Context(), c.Response().Writer)
 		}
 	} else if format == "json" {
 		err := json.NewDecoder(bytes.NewBufferString(payload)).Decode(&newProject)
 		if err != nil {
-			return pages.EditProject(projectName, string(payload), format, err).Render(c.Request().Context(), c.Response().Writer)
+			return hxPages.EditProject(renderLayout, projectName, string(payload), format, err).Render(c.Request().Context(), c.Response().Writer)
 		}
 	}
 	_, err := compose.CreateProject(projectName, newProject)
 	if err != nil {
-		return pages.EditProject(projectName, string(payload), format, err).Render(c.Request().Context(), c.Response().Writer)
+		return hxPages.EditProject(renderLayout, projectName, string(payload), format, err).Render(c.Request().Context(), c.Response().Writer)
 	}
+	hxRedirect(c, "/hx/project/"+projectName)
 	return c.Redirect(302, "/hx/project/"+projectName)
 }
 
@@ -238,6 +244,7 @@ func stopService(c echo.Context) error {
 // }
 
 func editService(c echo.Context) error {
+	renderLayout := c.Request().Header.Get("hx-request") != "true"
 	projectName := c.Param("project")
 	serviceName := c.Param("service")
 	format := c.QueryParam("format")
@@ -246,11 +253,12 @@ func editService(c echo.Context) error {
 	}
 	projectDir := compose.HasProject(projectName)
 	if projectDir == "" {
-		return c.Redirect(302, "/hx/")
+		hxRedirect(c, "/hx")
+		return c.Redirect(302, "/hx")
 	}
 	service, err := compose.GetService(projectDir, serviceName, true)
 	if err != nil {
-		return err
+		return hxPages.Service(renderLayout, projectName, serviceName, "", format, err).Render(c.Request().Context(), c.Response().Writer)
 	}
 	var payload []byte
 	switch format {
@@ -259,15 +267,14 @@ func editService(c echo.Context) error {
 	case "yaml":
 		payload, err = yaml.Marshal(service)
 	default:
+		hxRedirect(c, c.Path())
 		return c.Redirect(302, c.Path())
 	}
-	if err != nil {
-		return err
-	}
-	return pages.Service(projectName, serviceName, string(payload), format, err).Render(c.Request().Context(), c.Response().Writer)
+	return hxPages.Service(renderLayout, projectName, serviceName, string(payload), format, err).Render(c.Request().Context(), c.Response().Writer)
 }
 
 func addService(c echo.Context) error {
+	renderLayout := c.Request().Header.Get("hx-request") != "true"
 	projectName := c.Param("project")
 	format := c.QueryParam("format")
 	if format == "" {
@@ -275,14 +282,19 @@ func addService(c echo.Context) error {
 	}
 	projectDir := compose.HasProject(projectName)
 	if projectDir == "" {
-		return c.Redirect(302, "/hx/")
+		hxRedirect(c, "/hx")
+		return c.Redirect(302, "/hx")
 	}
-	return pages.Service(projectName, "", "", format, nil).Render(c.Request().Context(), c.Response().Writer)
+	return hxPages.Service(renderLayout, projectName, "", "", format, nil).Render(c.Request().Context(), c.Response().Writer)
 }
 
 func doEditService(c echo.Context) error {
+	renderLayout := c.Request().Header.Get("hx-request") != "true"
 	projectName := c.Param("project")
 	serviceName := c.Param("service")
+	if serviceName == "" {
+		serviceName = c.FormValue("name")
+	}
 	format := c.FormValue("format")
 	if format == "" {
 		format = "json"
@@ -290,7 +302,8 @@ func doEditService(c echo.Context) error {
 	payload := c.FormValue(format)
 	projectDir := compose.HasProject(projectName)
 	if projectDir == "" {
-		return c.Redirect(302, "/hx/")
+		hxRedirect(c, "/hx")
+		return c.Redirect(302, "/hx")
 	}
 	service := map[string]interface{}{}
 	var err error
@@ -300,34 +313,17 @@ func doEditService(c echo.Context) error {
 	case "yaml":
 		err = yaml.NewDecoder(bytes.NewBufferString(payload)).Decode(&service)
 	default:
+		hxRedirect(c, c.Path())
 		return c.Redirect(302, c.Path())
 	}
 	if err != nil {
-		return pages.Service(projectName, serviceName, string(payload), format, err).Render(c.Request().Context(), c.Response().Writer)
+		return hxPages.Service(renderLayout, projectName, serviceName, string(payload), format, err).Render(c.Request().Context(), c.Response().Writer)
 	}
 	err = compose.CreateService(projectDir, serviceName, service)
 	if err != nil {
-		return pages.Service(projectName, serviceName, string(payload), format, err).Render(c.Request().Context(), c.Response().Writer)
+		return hxPages.Service(renderLayout, projectName, serviceName, string(payload), format, err).Render(c.Request().Context(), c.Response().Writer)
 	}
-	return c.Redirect(302, "/hx/project/"+projectName)
-}
-func doAddService(c echo.Context) error {
-	projectName := c.Param("project")
-	serviceName := c.FormValue("name")
-	serviceJson := c.FormValue("json")
-	projectDir := compose.HasProject(projectName)
-	if projectDir == "" {
-		return c.Redirect(302, "/hx/")
-	}
-	service := map[string]interface{}{}
-	err := json.NewDecoder(bytes.NewBufferString(serviceJson)).Decode(&service)
-	if err != nil {
-		return err
-	}
-	err = compose.CreateService(projectDir, serviceName, service)
-	if err != nil {
-		return err
-	}
+	hxRedirect(c, "/hx/project/"+projectName)
 	return c.Redirect(302, "/hx/project/"+projectName)
 }
 
@@ -403,7 +399,7 @@ func getLog(c echo.Context) error {
 }
 
 func login(c echo.Context) error {
-	renderLayout := c.Get("hx-request") != "true"
+	renderLayout := c.Request().Header.Get("hx-request") != "true"
 	username := c.QueryParam("username")
 	var err error = nil
 	return hxPages.Login(renderLayout, username, err).Render(c.Request().Context(), c.Response().Writer)
@@ -422,7 +418,7 @@ func logout(c echo.Context) error {
 }
 
 func doLogin(c echo.Context) error {
-	renderLayout := c.Get("hx-request") != "true"
+	renderLayout := c.Request().Header.Get("hx-request") != "true"
 	username := c.FormValue("username")
 	password := c.FormValue("password")
 	if username != os.Getenv("API_USERNAME") || password != os.Getenv("API_PASSWORD") {

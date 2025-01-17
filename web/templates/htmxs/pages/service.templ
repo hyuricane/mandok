@@ -1,0 +1,51 @@
+package pages
+
+import "inovasiriset.co.id/docker/manager/web/templates/layouts"
+import "path"
+import "inovasiriset.co.id/docker/manager/web/templates/htmxs/components"
+
+templ Service(layout bool, projectName string, serviceName string, service string, format string, err error) {
+  if layout {
+    @layouts.HTMX(projectName + "-" + serviceName){
+      <div id="page" hx-get={path.Join("/hx", "project", projectName , "service",  serviceName, "edit")} hx-swap="outerHTML" hx-trigger="load" hx-indicator="#page-load-indicator"></div>
+    }
+    {{ return }}
+  }
+  @components.Breadcrumbs([]components.Breadcrumb{
+    { Text: "Home", Link: "/hx" },
+    { Text: projectName, Link: path.Join("/hx", "project", projectName) },
+    { Text: serviceName },
+  }...)
+  <title>{projectName} - {serviceName}</title>
+  <div id="page" hx-swap-oob="outerHTML" hx-boost="true">
+    <form hx-post={path.Join("/hx", "project", projectName , "service",  serviceName)}>
+      if serviceName == "" {
+        <label for="service-name">Name: 
+          <input id="service-name" name="name" type="text">
+        </label>
+      }
+      if err != nil {
+        <span style="color: red;">{err.Error()}</span>
+        <br/>
+      }
+      <input type="hidden" name="format" value={format} />
+      if format == "json" {
+        <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service", serviceName, "edit") + "?format=yaml")} hx-target="#page" hx-swap="outerHTML" hx-push-url="true">YAML</a>
+        <br/>
+      } else {
+        <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service", serviceName, "edit") + "?format=json")} hx-target="#page" hx-swap="outerHTML" hx-push-url="true">JSON</a>
+        <br/>
+      }
+      <input type="hidden" name="format" value={format} />
+      <textarea id="service-detail" name={format} style="width: 100%; height: 400px;">
+        if service != "" {
+          {service}
+        } else if format  == "json" {
+          {"{}"}
+        }
+      </textarea>
+      <br/>
+      <button type="submit">Submit</button>
+    </form>
+  </div>
+}

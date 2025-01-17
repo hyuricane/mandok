@@ -8,7 +8,9 @@ package layouts
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-func HTMX(title string) templ.Component {
+import "inovasiriset.co.id/docker/manager/web/templates/htmxs/components"
+
+func HTMX(title string, breadcrumbs ...components.Breadcrumb) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -36,13 +38,17 @@ func HTMX(title string) templ.Component {
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/layouts/htmx.templ`, Line: 5, Col: 15}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/layouts/htmx.templ`, Line: 6, Col: 15}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</title><script src=\"https://unpkg.com/htmx.org@2.0.4\" integrity=\"sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+\" crossorigin=\"anonymous\"></script><script src=\"https://unpkg.com/htmx-ext-sse@2.2.2/sse.js\"></script><script src=\"https://unpkg.com/htmx-ext-remove-me@2.0.0/remove-me.js\"></script><style>\n  #page-load-indicator {\n    float: right;\n    width: auto;\n    direction: rtl;\n    text-align: right;\n  }\n  #page-load-indicator.htmx-indicator.htmx-request {\n    opacity: 0.5;\n  }\n  .event {\n    font-family: 'Courier New', Courier, monospace;\n    font-size: 12px;\n    margin-bottom: 4px;\n    text-wrap-mode: nowrap;\n    direction: rtl;\n    text-align: right;\n  }\n  </style></head><body hx-indicator=\"#page-load-indicator\"><div id=\"page-load-indicator\" class=\"htmx-indicator\" hx-ext=\"remove-me\">loading...<div id=\"events\"></div></div><div id=\"breadcrumbs\" hx-swap-oob=\"true\" style=\"display: block; margin-top: 12px; margin-bottom: 12px;\"></div>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</title><script src=\"https://unpkg.com/htmx.org@2.0.4\" integrity=\"sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+\" crossorigin=\"anonymous\"></script><script src=\"https://unpkg.com/htmx-ext-sse@2.2.2/sse.js\"></script><script src=\"https://unpkg.com/htmx-ext-remove-me@2.0.0/remove-me.js\"></script><style>\n  #page-load-indicator {\n    float: right;\n    width: auto;\n    direction: rtl;\n    text-align: right;\n  }\n  #page-load-indicator.htmx-indicator.htmx-request {\n    opacity: 0.5;\n  }\n  .event {\n    font-family: 'Courier New', Courier, monospace;\n    font-size: 12px;\n    margin-bottom: 4px;\n    text-wrap-mode: nowrap;\n    direction: rtl;\n    text-align: right;\n  }\n  </style></head><body hx-indicator=\"#page-load-indicator\"><div id=\"page-load-indicator\" class=\"htmx-indicator\" hx-ext=\"remove-me\">loading...<div id=\"events\"></div></div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = components.Breadcrumbs(breadcrumbs...).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

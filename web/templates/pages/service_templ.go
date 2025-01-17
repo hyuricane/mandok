@@ -95,14 +95,10 @@ func Service(projectName string, serviceName string, service string, format stri
 				return templ_7745c5c3_Err
 			}
 			if serviceName == "" {
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<label for=\"service-name\">Name:  <input id=\"service-name\" name=\"name\" type=\"text\"></label>")
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<label for=\"service-name\">Name:  <input id=\"service-name\" name=\"name\" type=\"text\"></label><br>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<br>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
 			}
 			if err != nil {
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<span style=\"color: red;\">")

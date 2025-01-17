@@ -1,5 +1,6 @@
 package layouts
-templ HTMX(title string) {
+import "inovasiriset.co.id/docker/manager/web/templates/htmxs/components"
+templ HTMX(title string, breadcrumbs ...components.Breadcrumb) {
   <html>
   <head>
   <title>{title}</title>
@@ -32,7 +33,7 @@ templ HTMX(title string) {
     <div id="events">
     </div>
   </div>
-  <div id="breadcrumbs" hx-swap-oob="true" style="display: block; margin-top: 12px; margin-bottom: 12px;"></div>
+  @components.Breadcrumbs(breadcrumbs...)
   {children...}
   </body>
   </html>
