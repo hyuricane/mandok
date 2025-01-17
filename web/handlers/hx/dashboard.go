@@ -31,13 +31,17 @@ func RouteDashboard(group *echo.Group) {
 	projectGroup.GET("/:project/down", downProject)
 	projectGroup.GET("/:project/edit", editProject)
 	projectGroup.POST("/:project/edit", doEditProject)
+	projectGroup.GET("/:project/events", getEvents)
+
 	projectGroup.GET("/:project/service/:service/start", startService)
 	projectGroup.GET("/:project/service/:service/stop", stopService)
+
 	projectGroup.GET("/:project/service/:service/edit", editService)
 	projectGroup.GET("/:project/service-new", addService)
 	projectGroup.POST("/:project/service/:service", doEditService)
 	projectGroup.GET("/:project/service/:service/log", getLog)
 	projectGroup.POST("/:project/service", doAddService)
+
 	projectGroup.GET("/:project/route/:service", editRoute)
 	projectGroup.POST("/:project/route/:service", doEditRoute)
 
@@ -54,13 +58,12 @@ func RouteDashboard(group *echo.Group) {
 
 func dashboard(c echo.Context) error {
 	renderLayout := c.Get("hx-request") != "true"
-	log.Printf("[DEBUG] renderLayout: %t, %s", renderLayout, c.Get("hx-request"))
-
 	projects, err := compose.GetProjects()
 	if err != nil {
 		return err
 	}
 	log.Printf("[DEBUG] projects %v", projects)
+	log.Printf("[DEBUG] renderLayout %t", renderLayout)
 	return hxPages.Dashboard(renderLayout, projects, nil).Render(c.Request().Context(), c.Response().Writer)
 }
 
@@ -69,6 +72,7 @@ func project(c echo.Context) error {
 	name := c.Param("project")
 	projectDir := compose.HasProject(name)
 	if projectDir == "" {
+		hxRedirect(c, "/hx")
 		return c.Redirect(302, "/hx/")
 	}
 	return hxPages.Project(renderLayout, name, nil).Render(c.Request().Context(), c.Response().Writer)
