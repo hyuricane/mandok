@@ -5,6 +5,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"inovasiriset.co.id/docker/manager/app/lib/compose"
+	"inovasiriset.co.id/docker/manager/web/templates/htmxs/components"
 )
 
 func getEvents(c echo.Context) error {
@@ -39,11 +40,19 @@ func getEvents(c echo.Context) error {
 			if !ok {
 				return nil
 			}
-			if _, err = c.Response().Writer.Write([]byte("event: " + event.Type + "\n")); err != nil {
+			if _, err = c.Response().Writer.Write([]byte("event: " + event.Type + "\ndata: ")); err != nil {
 				return err
 			}
-			if _, err = c.Response().Writer.Write([]byte("data: <p remove-me=\"1s\" class=\"event\">" + event.Action + " " + event.Service + "</p>\n\n")); err != nil {
+			if err = components.Event(event).Render(c.Request().Context(), c.Response().Writer); err != nil {
 				return err
+			}
+			if _, err = c.Response().Writer.Write([]byte("\n\n")); err != nil {
+				return err
+			}
+			if event.Type == "container" && (event.Action == "start" || event.Action == "die") {
+				if _, err = c.Response().Writer.Write([]byte("event: updateStatus\n\n")); err != nil {
+					return err
+				}
 			}
 		}
 		c.Response().Flush()

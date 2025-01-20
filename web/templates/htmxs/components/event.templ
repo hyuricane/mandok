@@ -1,0 +1,7 @@
+package components
+
+import "inovasiriset.co.id/docker/manager/app/lib/compose"
+
+templ Event(event compose.DockerComposeEvent) {
+  <p remove-me="3s" class="event">{event.Action} {event.Service} {event.Name}</p>
+}
