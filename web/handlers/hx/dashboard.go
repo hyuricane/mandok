@@ -145,7 +145,7 @@ func doEditProject(c echo.Context) error {
 	if format == "" {
 		format = "json"
 	}
-	payload := c.FormValue(format)
+	payload := c.FormValue("project")
 	newProject := compose.ComposeProjectYaml{}
 	if format == "yaml" {
 		err := yaml.NewDecoder(bytes.NewBufferString(payload)).Decode(&newProject)
