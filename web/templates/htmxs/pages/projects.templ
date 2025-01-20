@@ -54,7 +54,7 @@ templ Project(layout bool, projectName string, err error) {
   <title>{projectName}</title>
   <div id="page" hx-swap-oob="outerHTML">
     <div id="project-events" hx-ext="sse" sse-connect={path.Join("/hx", "project", projectName, "events")} hx-indicator="none" style="float: right;">
-      <div sse-swap="container" hx-swap="beforebegin" hx-target="#page-load-indicator>#events"></div>
+      <div sse-swap="container" hx-swap="afterbegin" hx-target="#page-load-indicator>#events"></div>
     </div>
     <div>
       <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "start"))} hx-get={path.Join("/hx", "project", projectName, "start")} hx-swap="none" hx-indicator="#page-load-indicator">Start All</a>
@@ -93,10 +93,10 @@ templ EditProject(layout bool, projectName, project string, format string, err e
       @components.Error(err, "edit-project-error")
       <input type="hidden" name="format" value={format} />
       if format == "json" {
-        <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "edit") + "?format=yaml")} hx-get={path.Join("/hx", "project", projectName, "edit") + "?format=yaml"} hx-push-url="true" hx-target="#page" hx-swap="outerHTML" >YAML</a>
+        <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "edit") + "?format=yaml")} hx-get={path.Join("/hx", "project", projectName, "edit") + "?format=yaml"} hx-replace-url="true" hx-target="#page" hx-swap="outerHTML" >YAML</a>
         <br/>
       } else {
-        <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "edit") + "?format=json")} hx-get={path.Join("/hx", "project", projectName, "edit") + "?format=json"} hx-push-url="true" hx-target="#page" hx-swap="outerHTML" >JSON</a>
+        <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "edit") + "?format=json")} hx-get={path.Join("/hx", "project", projectName, "edit") + "?format=json"} hx-replace-url="true" hx-target="#page" hx-swap="outerHTML" >JSON</a>
         <br/>
       }
       <textarea id="project-raw" name="project" style="width: 100%; height: 400px;">{project}</textarea>

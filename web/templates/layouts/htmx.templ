@@ -13,6 +13,7 @@ templ HTMX(title string, breadcrumbs ...components.Breadcrumb) {
     width: auto;
     direction: rtl;
     text-align: right;
+    z-index: 0;
   }
   #page-load-indicator.htmx-indicator.htmx-request {
     opacity: 0.5;
@@ -24,6 +25,18 @@ templ HTMX(title string, breadcrumbs ...components.Breadcrumb) {
     text-wrap-mode: nowrap;
     direction: rtl;
     text-align: right;
+  }
+  #events {
+    max-width: 200px;
+    overflow: visible;
+  }
+  #page {
+    margin: 2%;
+    z-index: 10;
+  }
+  #breadcrumbs {
+    margin: 0 2%;
+    z-index: 10;
   }
   </style>
   </head>

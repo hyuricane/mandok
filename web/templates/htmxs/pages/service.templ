@@ -30,10 +30,10 @@ templ Service(layout bool, projectName string, serviceName string, service strin
       }
       <input type="hidden" name="format" value={format} />
       if format == "json" {
-        <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service", serviceName, "edit") + "?format=yaml")} hx-target="#page" hx-swap="outerHTML" hx-push-url="true">YAML</a>
+        <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service", serviceName, "edit") + "?format=yaml")} hx-target="#page" hx-swap="outerHTML" hx-replace-url="true">YAML</a>
         <br/>
       } else {
-        <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service", serviceName, "edit") + "?format=json")} hx-target="#page" hx-swap="outerHTML" hx-push-url="true">JSON</a>
+        <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service", serviceName, "edit") + "?format=json")} hx-target="#page" hx-swap="outerHTML" hx-replace-url="true">JSON</a>
         <br/>
       }
       <input type="hidden" name="format" value={format} />

@@ -204,7 +204,7 @@ func Project(layout bool, projectName string, err error) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" hx-indicator=\"none\" style=\"float: right;\"><div sse-swap=\"container\" hx-swap=\"beforebegin\" hx-target=\"#page-load-indicator&gt;#events\"></div></div><div><a href=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" hx-indicator=\"none\" style=\"float: right;\"><div sse-swap=\"container\" hx-swap=\"afterbegin\" hx-target=\"#page-load-indicator&gt;#events\"></div></div><div><a href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -470,7 +470,7 @@ func EditProject(layout bool, projectName, project string, format string, err er
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" hx-push-url=\"true\" hx-target=\"#page\" hx-swap=\"outerHTML\">YAML</a><br>")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" hx-replace-url=\"true\" hx-target=\"#page\" hx-swap=\"outerHTML\">YAML</a><br>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -497,7 +497,7 @@ func EditProject(layout bool, projectName, project string, format string, err er
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" hx-push-url=\"true\" hx-target=\"#page\" hx-swap=\"outerHTML\">JSON</a><br>")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" hx-replace-url=\"true\" hx-target=\"#page\" hx-swap=\"outerHTML\">JSON</a><br>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
