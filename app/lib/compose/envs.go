@@ -2,10 +2,13 @@ package compose
 
 import (
 	"bytes"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/containerd/continuity/fs"
 )
 
 // dry run docker compose up
@@ -37,39 +40,58 @@ func ReadEnvFile(projectDir string, masked bool) (plain map[string]string, secre
 	plain = map[string]string{}
 	secret = map[string]string{}
 	if err != nil {
+		log.Printf("[DEBUG] read %s error: %v", filepath.Join(projectDir, fileName), err)
+		log.Printf("[DEBUG] isMasked %t", masked)
 		if os.IsNotExist(err) {
+			if masked { // just copy .env file
+				log.Printf("[DEBUG] try read %s", filepath.Join(projectDir, ".env"))
+				if _, err1 := os.Stat(filepath.Join(projectDir, ".env")); err1 != nil {
+					log.Printf("[DEBUG] read %s error: %v", filepath.Join(projectDir, ".env"), err1)
+					return plain, secret, err1
+				}
+				log.Printf("[DEBUG] can read %s", filepath.Join(projectDir, ".env"))
+				err = fs.CopyFile(filepath.Join(projectDir, fileName), filepath.Join(projectDir, ".env"))
+				if err != nil {
+					return plain, secret, nil
+				}
+				return ReadEnvFile(projectDir, masked)
+			}
 			return plain, secret, nil
 		}
 		return nil, nil, err
 	}
 	lines := bytes.Split(payload, []byte("\n"))
 	isPlain := true
-	for _, line := range lines {
-		if len(line) == 0 {
+	for _, bline := range lines {
+		if len(bline) == 0 {
 			continue
 		}
-		if string(line) == "### secret" {
+		line := strings.TrimSpace(string(bline))
+		if line == "### secret" {
 			isPlain = false
 			continue
-		} else if string(line) == "### compound-plain" {
+		} else if line == "### compound-plain" {
 			isPlain = true
 			continue
-		} else if string(line) == "### compound-secret" {
+		} else if line == "### compound-secret" {
 			isPlain = false
+			continue
+		}
+		if strings.HasPrefix(line, "#") {
 			continue
 		}
 		if isPlain {
-			parts := bytes.Split(line, []byte("="))
+			parts := strings.Split(line, "=")
 			if len(parts) != 2 {
 				continue
 			}
 			plain[string(parts[0])] = string(parts[1])
 		} else {
-			parts := bytes.Split(line, []byte("="))
+			parts := strings.Split(line, "=")
 			if len(parts) != 2 {
 				continue
 			}
-			secret[string(parts[0])] = string(parts[1])
+			secret[parts[0]] = parts[1]
 		}
 	}
 	return plain, secret, nil

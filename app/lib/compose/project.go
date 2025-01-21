@@ -80,6 +80,10 @@ func HasProject(name string) string {
 }
 
 func GetProject(projectDir string, nointerpolate ...bool) (*ComposeProjectYaml, error) {
+	// make sure masked.env exists
+	if _, err := os.Stat(path.Join(projectDir, "masked.env")); err != nil && os.IsNotExist(err) {
+		ReadEnvFile(projectDir, true) // this will create masked.env if necessary
+	}
 	// go to project directory and trigger docker compose up
 	args := []string{"--env-file", "masked.env", "config", "--format", "json", "--no-path-resolution"}
 	if len(nointerpolate) > 0 && nointerpolate[0] {
