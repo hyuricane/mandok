@@ -7,38 +7,7 @@ templ HTMX(title string, breadcrumbs ...components.Breadcrumb) {
   <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/htmx-ext-sse@2.2.2/sse.js"></script>
   <script src="https://unpkg.com/htmx-ext-remove-me@2.0.0/remove-me.js"></script>
-  <style>
-  #page-load-indicator {
-    float: right;
-    width: auto;
-    direction: rtl;
-    text-align: right;
-    z-index: 0;
-  }
-  #page-load-indicator.htmx-indicator.htmx-request {
-    opacity: 0.5;
-  }
-  .event {
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 12px;
-    margin-bottom: 4px;
-    text-wrap-mode: nowrap;
-    direction: rtl;
-    text-align: right;
-  }
-  #events {
-    max-width: 200px;
-    overflow: visible;
-  }
-  #page {
-    margin: 2%;
-    z-index: 10;
-  }
-  #breadcrumbs {
-    margin: 0 2%;
-    z-index: 10;
-  }
-  </style>
+  <link href="/static/main.css" rel="stylesheet" />
   </head>
   <body hx-indicator="#page-load-indicator">
   <div id="page-load-indicator" class="htmx-indicator" hx-ext="remove-me">

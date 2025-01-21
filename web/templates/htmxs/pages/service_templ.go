@@ -109,7 +109,7 @@ func Service(layout bool, projectName string, serviceName string, service string
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</title><div id=\"page\" hx-swap-oob=\"outerHTML\" hx-boost=\"true\"><form hx-post=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</title><div id=\"page\" hx-swap-oob=\"outerHTML\" class=\"container p-4\" hx-boost=\"true\"><form hx-post=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

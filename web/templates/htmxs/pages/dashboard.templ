@@ -7,20 +7,22 @@ import "inovasiriset.co.id/docker/manager/web/templates/htmxs/components"
 templ Dashboard(layout bool, projects []string, err error) {
   if layout {
     @layouts.HTMX("Mandok Projects") {
-      <div id="page" hx-get={path.Join("/hx")} hx-swap="outerHTML" hx-trigger="load" hx-indicator="#page-load-indicator"></div>
+      <div id="page" hx-get={path.Join("/hx")} hx-swap="outerHTML" hx-trigger="load" hx-indicator="#page-load-indicator" class="container p-4"></div>
     } 
     {{ return }}
   }
   @components.Breadcrumbs()
   <title>Mandok Projects</title>
-  <div id="page" hx-swap-oob="outerHTML">
-    <h1>Projects</h1>
+  <div id="page" hx-swap-oob="outerHTML" class="container p-4">
+    <h1 class="text-3xl font-bold mb-4">Projects</h1>
     @components.Error(err, "dashboard-err")
-    <ul>
+    <ul class="list-disc pl-6 mb-4">
     for _, p := range projects {
-      <li><a href={templ.SafeURL(path.Join("/hx", "project", p))} hx-get={path.Join("/hx", "project", p)} hx-push-url="true" hx-target="#page">{p}</a></li>
+      <li><a href={templ.SafeURL(path.Join("/hx", "project", p))} hx-get={path.Join("/hx", "project", p)} hx-push-url="true" hx-target="#page" class="text-blue-500 hover:underline">{p}</a></li>
     }
     </ul>
-    <a type="button" href="/hx/project-new" hx-get="/hx/project-new" hx-push-url="true" hx-target="#page" hx-swap="outerHTML" >New Project</a>
+    <a type="button" href="/hx/project-new" hx-get="/hx/project-new" hx-push-url="true" hx-target="#page" hx-swap="outerHTML" class="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+      New Project
+    </a>
   </div>
 }

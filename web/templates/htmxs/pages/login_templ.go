@@ -61,7 +61,7 @@ func Login(layout bool, username string, err error) templ.Component {
 			}
 			return
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<title>Login</title><div id=\"page\" hx-swap-oob=\"outerHTML\"><form hx-post=\"#\" method=\"post\" hx-target=\"#page\"><table><tr><td><label for=\"login_username\">Username</label></td><td><input id=\"login_username\" name=\"username\" value=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<title>Login</title><div id=\"page\" hx-swap-oob=\"outerHTML\" class=\"container p-4\"><form hx-post=\"#\" method=\"post\" hx-target=\"#page\" class=\"bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4\"><table><tr><td><label for=\"login_username\" class=\"block text-gray-700 mb-2 mr-4\">Username</label></td><td><input id=\"login_username\" name=\"username\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -74,7 +74,7 @@ func Login(layout bool, username string, err error) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"></td></tr><tr><td><label for=\"login_password\">Password</label></td><td><input id=\"login_password\" name=\"password\" type=\"password\"></td></tr></table>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" class=\"shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline\"></td></tr><tr><td><label for=\"login_password\" class=\"block text-gray-700 mb-2 mr-4\">Password</label></td><td><input id=\"login_password\" name=\"password\" type=\"password\" class=\"shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline\"></td></tr></table>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -82,7 +82,7 @@ func Login(layout bool, username string, err error) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<button type=\"submit\">Login</button></form></div>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<button type=\"submit\" class=\"bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline\">Login</button></form></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

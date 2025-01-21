@@ -17,7 +17,7 @@ templ Service(layout bool, projectName string, serviceName string, service strin
     { Text: serviceName },
   }...)
   <title>{projectName} - {serviceName}</title>
-  <div id="page" hx-swap-oob="outerHTML" hx-boost="true">
+  <div id="page" hx-swap-oob="outerHTML" class="container p-4" hx-boost="true">
     <form hx-post={path.Join("/hx", "project", projectName , "service",  serviceName)}>
       if serviceName == "" {
         <label for="service-name">Name: 

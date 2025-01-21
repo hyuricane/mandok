@@ -22,6 +22,7 @@ func ListenHttp() error {
 		c.Logger().Error(err)
 		c.Echo().DefaultHTTPErrorHandler(err, c)
 	}
+	app.Static("/static", "./static")
 	dashboard.RouteDashboard(app.Group(""))
 	hx.RouteDashboard(app.Group("/hx"))
 

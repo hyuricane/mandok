@@ -21,16 +21,15 @@ templ NewProject(layout bool, err error) {
     },
   }...)
   <title>New Project</title>
-  <div id="page" hx-swap-oob="outerHTML">
-    <h1>New Project</h1>
-    <form hx-post="#" hx-url>
-      <label for="project-name">Name: 
-        <input id="project-name" name="name" type="text" required>
-      </label>
+  <div id="page" hx-swap-oob="outerHTML" class="container p-4">
+    <h1 class="text-3xl font-bold mb-4">New Project</h1>
+    <form hx-post="#" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+      <label for="project-name" class="block text-gray-700 text-sm font-bold mb-2">Name: </label>
+      <input id="project-name" name="name" type="text" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
       <br/>
       @components.Error(err, "new-project-error")
       <br/>
-      <button type="submit">Submit</button>
+      <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Submit</button>
     </form>
   </div>
 }
@@ -52,14 +51,14 @@ templ Project(layout bool, projectName string, err error) {
     },
   }...)
   <title>{projectName}</title>
-  <div id="page" hx-swap-oob="outerHTML">
-    <div id="project-events" hx-ext="sse" sse-connect={path.Join("/hx", "project", projectName, "events")} hx-indicator="none" style="float: right;">
+  <div id="page" hx-swap-oob="outerHTML" class="container p-4">
+    <div id="project-events" hx-ext="sse" sse-connect={path.Join("/hx", "project", projectName, "events")} hx-indicator="none" class="float-right">
       <div sse-swap="container" hx-swap="afterbegin" hx-target="#page-load-indicator>#events"></div>
     </div>
-    <div>
-      <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "start"))} hx-get={path.Join("/hx", "project", projectName, "start")} hx-swap="none" hx-indicator="#page-load-indicator">Start All</a>
-      <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "down"))} hx-get={path.Join("/hx", "project", projectName, "down")} hx-swap="none" hx-indicator="#page-load-indicator">Down</a>
-      <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "edit"))} hx-get={path.Join("/hx", "project", projectName, "edit")} hx-push-url="true" hx-target="#page" >Edit</a>
+    <div class="flex space-x-4 mb-4">
+      <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "start"))} hx-get={path.Join("/hx", "project", projectName, "start")} hx-swap="none" hx-indicator="#page-load-indicator" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Start All</a>
+      <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "down"))} hx-get={path.Join("/hx", "project", projectName, "down")} hx-swap="none" hx-indicator="#page-load-indicator" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Down</a>
+      <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "edit"))} hx-get={path.Join("/hx", "project", projectName, "edit")} hx-push-url="true" hx-target="#page" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Edit</a>
     </div>
     <div id="project-status" hx-get={path.Join("/hx", "project", projectName, "status")} hx-trigger="load" hx-swap="outerHTML" hx-indicator="#page-load-indicator"></div>
     <div id="project-envs" hx-get={path.Join("/hx", "project", projectName, "envs")} hx-trigger="load" hx-swap="outerHTML" hx-indicator="#page-load-indicator"></div>
@@ -87,21 +86,21 @@ templ EditProject(layout bool, projectName, project string, format string, err e
     },
   }...)
   <title>{projectName}: Edit Raw - { format }</title>
-  <div id="page" hx-swap-oob="outerHTML">
-    <h1>Edit Project: {projectName}</h1>
+  <div id="page" hx-swap-oob="outerHTML" class="container p-4">
+    <h1 class="text-3xl font-bold mb-4">Edit Project: {projectName}</h1>
     <form hx-post="#" hx-url>
       @components.Error(err, "edit-project-error")
       <input type="hidden" name="format" value={format} />
       if format == "json" {
-        <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "edit") + "?format=yaml")} hx-get={path.Join("/hx", "project", projectName, "edit") + "?format=yaml"} hx-replace-url="true" hx-target="#page" hx-swap="outerHTML" >YAML</a>
+        <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "edit") + "?format=yaml")} hx-get={path.Join("/hx", "project", projectName, "edit") + "?format=yaml"} hx-replace-url="true" hx-target="#page" hx-swap="outerHTML" class="text-blue-500 hover:underline">YAML</a>
         <br/>
       } else {
-        <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "edit") + "?format=json")} hx-get={path.Join("/hx", "project", projectName, "edit") + "?format=json"} hx-replace-url="true" hx-target="#page" hx-swap="outerHTML" >JSON</a>
+        <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "edit") + "?format=json")} hx-get={path.Join("/hx", "project", projectName, "edit") + "?format=json"} hx-replace-url="true" hx-target="#page" hx-swap="outerHTML" class="text-blue-500 hover:underline">JSON</a>
         <br/>
       }
-      <textarea id="project-raw" name="project" style="width: 100%; height: 400px;">{project}</textarea>
+      <textarea id="project-raw" name="project" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline h-64">{project}</textarea>
       <br/>
-      <button type="submit">Submit</button>
+      <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">Submit</button>
     </form>
   </div>
 }
