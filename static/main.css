@@ -674,6 +674,10 @@ video {
   min-width: 100%;
 }
 
+.resize {
+  resize: both;
+}
+
 .list-disc {
   list-style-type: disc;
 }

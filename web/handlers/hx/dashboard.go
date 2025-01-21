@@ -16,7 +16,6 @@ import (
 	"inovasiriset.co.id/docker/manager/web/middlewares"
 	"inovasiriset.co.id/docker/manager/web/templates/components"
 	hxPages "inovasiriset.co.id/docker/manager/web/templates/htmxs/pages"
-	"inovasiriset.co.id/docker/manager/web/templates/pages"
 )
 
 func RouteDashboard(group *echo.Group) {
@@ -328,11 +327,13 @@ func doEditService(c echo.Context) error {
 }
 
 func editRoute(c echo.Context) error {
+	renderLayout := c.Request().Header.Get("hx-request") != "true"
 	projectName := c.Param("project")
 	serviceName := c.Param("service")
 	projectDir := compose.HasProject(projectName)
 	if projectDir == "" {
-		return c.Redirect(302, "/hx/")
+		hxRedirect(c, "/hx")
+		return c.Redirect(302, "/hx")
 	}
 	routes, err := compose.GetRoutes(projectDir, serviceName)
 	if err != nil {
@@ -342,7 +343,7 @@ func editRoute(c echo.Context) error {
 	if !ok {
 		route = compose.ServiceRoute{}
 	}
-	return pages.Route(projectName, serviceName, route, err).Render(c.Request().Context(), c.Response().Writer)
+	return hxPages.Route(renderLayout, projectName, serviceName, route, err).Render(c.Request().Context(), c.Response().Writer)
 }
 
 func doEditRoute(c echo.Context) error {

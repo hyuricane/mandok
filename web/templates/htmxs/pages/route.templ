@@ -1,0 +1,63 @@
+package pages
+
+import "inovasiriset.co.id/docker/manager/app/lib/compose"
+import "inovasiriset.co.id/docker/manager/web/templates/layouts"
+import "inovasiriset.co.id/docker/manager/web/templates/htmxs/components"
+import "path"
+import "encoding/json"
+import "fmt"
+
+templ Route(layout bool, projectName, serviceName string, route compose.ServiceRoute, err error) {
+   if layout {
+    @layouts.HTMX(projectName) {
+      <div id="page" hx-get={path.Join("/hx", "project", projectName, "route", serviceName)} hx-swap="outerHTML" hx-trigger="load" hx-indicator="#page-load-indicator"></div>
+    }
+    {{ return }}
+  }
+  @components.Breadcrumbs([]components.Breadcrumb{
+    {
+      Text: "Home",
+      Link: "/hx",
+    },
+    {
+      Text: projectName,
+      Link: path.Join("/hx", "project", projectName),
+    },
+    {
+      Text: serviceName,
+      Link: path.Join("/hx", "project", projectName, "service", serviceName, "edit"),
+    },
+    {
+      Text: "Route",
+    },
+  }...)
+  <title>Edit Route: {serviceName}</title>
+  <div id="page" hx-swap-oob="outerHTML" class="container p-4">
+    <h1 class="text-3xl font-bold mb-4">Edit Project: {projectName}</h1>
+
+    <form method="post" hx-post="#">
+      if err != nil {
+        <br/>
+        <span style="color: red;">{err.Error()}</span>
+      }
+      
+      <br/>
+      <label for="route-domain" class="block text-gray-700 mb-2 mr-4">Domain:</label>
+      <input id="route-domain" name="domain" type="string" value={route.Domain} class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
+      <label for="route-port" class="block text-gray-700 mb-2 mr-4">Port:</label>
+      <input id="route-port" name="port" type="number" min="0" value={fmt.Sprintf("%d", route.Port)} class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+      <label for="route-sticky" class="block text-gray-700 mb-2 mr-4">Sticky:</label>
+      <textarea id="route-sticky" name="sticky" class="block shadow appearance-none border rounded w-fit resize py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline h-64">
+        if len(route.Sticky) == 0 {
+          {"{}"}
+        } else {
+          {{ 
+            jsonStikcy, _ := json.MarshalIndent(route.Sticky, "  ", "  ")
+          }}
+          {string(jsonStikcy)}
+        }
+        </textarea>
+      <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">Submit</button>
+    </form>
+  </div>
+}

@@ -301,11 +301,4 @@ func Service(layout bool, projectName string, serviceName string, service string
 	})
 }
 
-func isChecked(cur, val string) string {
-	if cur == val {
-		return "true"
-	}
-	return "false"
-}
-
 var _ = templruntime.GeneratedTemplate

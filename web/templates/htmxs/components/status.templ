@@ -27,7 +27,14 @@ templ Statuses(projectName string, projectStats map[string]compose.ServiceStatus
 						<td class="px-6 py-4 whitespace-nowrap">{v.Image}</td>
 						<td class="px-6 py-4 whitespace-nowrap">{fmt.Sprintf("%d/%d", v.Running, v.Expected)}</td>
 						<td class="px-6 py-4 whitespace-nowrap">{v.State}</td>
-						<td class="px-6 py-4 whitespace-nowrap"><a href={templ.SafeURL("//" + v.Route)} target="_blank" class="text-blue-500 hover:underline">{v.Route}</a></td>
+						<td class="px-6 py-4 whitespace-nowrap">
+							if v.Route != "" {
+							<a href={templ.SafeURL("//" + v.Route)} target="_blank" class="text-blue-500 hover:underline">{v.Route}</a> | 
+							<a href={templ.SafeURL(path.Join("/hx", "project", projectName, "route", n))} hx-get={path.Join("/hx", "project", projectName, "route", n)} hx-target="#page" hx-push-url="true" class="text-blue-500 hover:underline mr-2">Edit</a>
+							} else {
+								<a href={templ.SafeURL(path.Join("/hx", "project", projectName, "route", n))} hx-get={path.Join("/hx", "project", projectName, "route", n)} hx-target="#page" hx-push-url="true" class="text-blue-500 hover:underline mr-2">Add Route</a>
+							}
+						</td>
 						<td class="px-6 py-4 whitespace-nowrap">
 							<a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service", n, "edit"))} hx-get={path.Join("/hx", "project", projectName, "service", n, "edit")} hx-target="#page" hx-push-url="true" class="text-blue-500 hover:underline mr-2">Edit</a>
 							if v.State == "running" {
