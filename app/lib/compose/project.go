@@ -103,7 +103,137 @@ func GetProject(projectDir string, nointerpolate ...bool) (*ComposeProjectYaml, 
 	if err != nil {
 		return nil, err
 	}
+	if len(nointerpolate) > 0 && nointerpolate[0] { // handle no interpolate volume problem
+		interpolatedPrj, err := GetProject(projectDir)
+		if err != nil {
+			return nil, err
+		}
+		prj.Volumes = handleNonIntepolatedVolumeMap(prj.Volumes, interpolatedPrj.Volumes)
+		for name, svc := range prj.Services {
+			ivols, ok := svc["volumes"]
+			if !ok {
+				continue
+			}
+			interpolatedISvc, ok := interpolatedPrj.Services[name]
+			if !ok {
+				continue
+			}
+			interpolatedIVols, ok := interpolatedISvc["volumes"]
+			if !ok {
+				continue
+			}
+			switch vols := ivols.(type) {
+			case map[string]interface{}:
+				interpolatedVols, ok := interpolatedIVols.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				vols = handleNonIntepolatedVolumeMap(vols, interpolatedVols)
+				svc["volumes"] = vols
+				prj.Services[name] = svc
+			case []interface{}:
+				interpolatedVols, ok := interpolatedIVols.([]interface{})
+				if !ok {
+					continue
+				}
+				vols = handleNonIntepolatedVolumeSlice(vols, interpolatedVols)
+				svc["volumes"] = vols
+				prj.Services[name] = svc
+			}
+		}
+	}
 	return &prj, nil
+}
+
+func handleNonIntepolatedVolumeMap(nonInterpolatedVolumes, interpolatedVolumes map[string]interface{}) map[string]interface{} {
+	for name, ivol := range nonInterpolatedVolumes {
+		vol, ok := ivol.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		t, ok := vol["type"]
+		if !ok {
+			continue
+		}
+		ts, ok := t.(string)
+		if !ok {
+			continue
+		}
+		if ts != "volume" {
+			continue
+		}
+		interpoatedIvol, ok := interpolatedVolumes[name]
+		if !ok {
+			continue
+		}
+		interpolatedVol, ok := interpoatedIvol.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		interpolatedIType, ok := interpolatedVol["type"]
+		if !ok {
+			continue
+		}
+		interpolatedType, ok := interpolatedIType.(string)
+		if !ok {
+			continue
+		}
+		if interpolatedType == "bind" {
+			vol["type"] = "bind"
+			vol["bind"] = interpolatedVol["bind"]
+			delete(vol, ts)
+			nonInterpolatedVolumes[name] = vol
+		}
+	}
+	return nonInterpolatedVolumes
+}
+
+func handleNonIntepolatedVolumeSlice(nonInterpolatedVolumes, interpolatedVolumes []interface{}) []interface{} {
+	for i, ivol := range nonInterpolatedVolumes {
+		vol, ok := ivol.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		t, ok := vol["type"]
+		if !ok {
+			continue
+		}
+		ts, ok := t.(string)
+		if !ok {
+			continue
+		}
+		if ts != "volume" {
+			continue
+		}
+		// len([0]) = 1
+		if len(interpolatedVolumes) <= i {
+			continue
+		}
+
+		interpolatedIVol := interpolatedVolumes[i]
+		if !ok {
+			continue
+		}
+		interpolatedVol, ok := interpolatedIVol.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		interpolatedIType, ok := interpolatedVol["type"]
+		if !ok {
+			continue
+		}
+		interpolatedType, ok := interpolatedIType.(string)
+		if !ok {
+			continue
+		}
+		if interpolatedType == "bind" {
+			vol["type"] = "bind"
+			vol["bind"] = interpolatedVol["bind"]
+			delete(vol, ts)
+			nonInterpolatedVolumes[i] = vol
+		}
+	}
+	return nonInterpolatedVolumes
 }
 
 func GetProjects() ([]string, error) {
