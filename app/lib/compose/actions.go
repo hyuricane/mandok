@@ -11,7 +11,7 @@ func StartProject(projectDir string, restart bool, pull bool, services ...string
 		args = append(args, "--force-recreate")
 	}
 	if pull {
-		args = append(args, "--pull", "always")
+		args = append(args, "--pull", "always", "--build")
 	}
 	args = append(args, services...)
 	cmd := exec.Command("docker-compose", args...)
