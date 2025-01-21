@@ -45,7 +45,7 @@ templ Statuses(projectName string, projectStats map[string]compose.ServiceStatus
 					</tr>
 				}
 				<tr>
-					<td colspan="6" class="px-6 py-4 whitespace-nowrap"><a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service-new"))} hx-get={path.Join("/hx", "project", projectName, "service-new")} hx-target="#page" hx-push-url="true" class="text-blue-500 hover:underline">New Service</a></td>
+					<td colspan="6" class="px-6 py-4 whitespace-nowrap"><a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service-new"))} hx-get={path.Join("/hx", "project", projectName, "service-new")} hx-target="#page" hx-push-url="true" class="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">New Service</a></td>
 				</tr>
 				if err != nil {
 					<tr>

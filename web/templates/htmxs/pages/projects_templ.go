@@ -51,7 +51,7 @@ func NewProject(layout bool, err error) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var3 string
-				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(path.Join("/hx", "new-project"))
+				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(path.Join("/hx", "project-new"))
 				if templ_7745c5c3_Err != nil {
 					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/htmxs/pages/projects.templ`, Line: 10, Col: 60}
 				}
@@ -87,7 +87,7 @@ func NewProject(layout bool, err error) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<title>New Project</title><div id=\"page\" hx-swap-oob=\"outerHTML\" class=\"container p-4\"><h1 class=\"text-3xl font-bold mb-4\">New Project</h1><form hx-post=\"#\" class=\"bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4\"><label for=\"project-name\" class=\"block text-gray-700 text-sm font-bold mb-2\">Name: </label> <input id=\"project-name\" name=\"name\" type=\"text\" class=\"shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline\" required><br>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<title>New Project</title><div id=\"page\" hx-swap-oob=\"outerHTML\" class=\"container p-4\"><h1 class=\"text-3xl font-bold mb-4\">New Project</h1><form hx-post=\"#\" class=\"bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4\"><label for=\"project-name\" class=\"block text-gray-700 text-sm font-bold mb-2\">Name: </label> <input id=\"project-name\" name=\"name\" type=\"text\" class=\"shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline\" required><br>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -430,88 +430,36 @@ func EditProject(layout bool, projectName, project string, format string, err er
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<input type=\"hidden\" name=\"format\" value=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<input type=\"radio\" name=\"format\" value=\"yaml\" hx-get=\"#\" hx-target=\"#page\" hx-swap=\"outerHTML\" hx-replace-url=\"true\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var23 string
-		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(format)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/htmxs/pages/projects.templ`, Line: 93, Col: 54}
+		if format == "yaml" {
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" checked")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"> ")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" class=\"rounded-full border-gray-300 focus:ring-2 focus:ring-blue-300\">YAML <input type=\"radio\" name=\"format\" value=\"json\" hx-get=\"#\" hx-target=\"#page\" hx-swap=\"outerHTML\" hx-replace-url=\"true\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if format == "json" {
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<a href=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var24 templ.SafeURL = templ.SafeURL(path.Join("/hx", "project", projectName, "edit") + "?format=yaml")
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var24)))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" hx-get=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var25 string
-			templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(path.Join("/hx", "project", projectName, "edit") + "?format=yaml")
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/htmxs/pages/projects.templ`, Line: 95, Col: 172}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" hx-replace-url=\"true\" hx-target=\"#page\" hx-swap=\"outerHTML\" class=\"text-blue-500 hover:underline\">YAML</a><br>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		} else {
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<a href=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var26 templ.SafeURL = templ.SafeURL(path.Join("/hx", "project", projectName, "edit") + "?format=json")
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var26)))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" hx-get=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var27 string
-			templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(path.Join("/hx", "project", projectName, "edit") + "?format=json")
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/htmxs/pages/projects.templ`, Line: 98, Col: 172}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" hx-replace-url=\"true\" hx-target=\"#page\" hx-swap=\"outerHTML\" class=\"text-blue-500 hover:underline\">JSON</a><br>")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" checked")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<textarea id=\"project-raw\" name=\"project\" class=\"shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline h-64\">")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" class=\"rounded-full border-gray-300 focus:ring-2 focus:ring-blue-300\">JSON <textarea id=\"project-raw\" name=\"project\" class=\"shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline h-64\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var28 string
-		templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(project)
+		var templ_7745c5c3_Var23 string
+		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(project)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/htmxs/pages/projects.templ`, Line: 101, Col: 192}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/htmxs/pages/projects.templ`, Line: 95, Col: 192}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -12,7 +12,7 @@ templ Login(layout bool, username string, err error) {
   }
   <title>Login</title>
   <div id="page" hx-swap-oob="outerHTML" class="container p-4">
-    <form hx-post="#" method="post" hx-target="#page" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+    <form hx-post="#" method="post" hx-target="#page" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 w-fit mx-auto" hx-eva>
       <table>
         <tr>
           <td>
@@ -21,7 +21,7 @@ templ Login(layout bool, username string, err error) {
             </label>
           </td>
           <td>
-            <input id="login_username" name="username" value={ username } class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            <input id="login_username" name="username" value={ username } class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
           </td>
         </tr>
         <tr>
@@ -31,7 +31,7 @@ templ Login(layout bool, username string, err error) {
             </label>
           </td>
           <td>
-            <input id="login_password" name="password" type="password" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            <input id="login_password" name="password" type="password" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
           </td>
         </tr>
       </table>

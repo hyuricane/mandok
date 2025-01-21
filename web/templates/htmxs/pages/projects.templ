@@ -7,7 +7,7 @@ import "path"
 templ NewProject(layout bool, err error) {
   if layout {
     @layouts.HTMX("New Project") {
-      <div id="page" hx-get={path.Join("/hx", "new-project")} hx-swap="outerHTML" hx-trigger="load" hx-indicator="#page-load-indicator"></div>
+      <div id="page" hx-get={path.Join("/hx", "project-new")} hx-swap="outerHTML" hx-trigger="load" hx-indicator="#page-load-indicator"></div>
     }
     {{ return }}
   }
@@ -25,7 +25,7 @@ templ NewProject(layout bool, err error) {
     <h1 class="text-3xl font-bold mb-4">New Project</h1>
     <form hx-post="#" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
       <label for="project-name" class="block text-gray-700 text-sm font-bold mb-2">Name: </label>
-      <input id="project-name" name="name" type="text" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
+      <input id="project-name" name="name" type="text" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
       <br/>
       @components.Error(err, "new-project-error")
       <br/>
@@ -90,14 +90,8 @@ templ EditProject(layout bool, projectName, project string, format string, err e
     <h1 class="text-3xl font-bold mb-4">Edit Project: {projectName}</h1>
     <form hx-post="#" hx-url>
       @components.Error(err, "edit-project-error")
-      <input type="hidden" name="format" value={format} />
-      if format == "json" {
-        <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "edit") + "?format=yaml")} hx-get={path.Join("/hx", "project", projectName, "edit") + "?format=yaml"} hx-replace-url="true" hx-target="#page" hx-swap="outerHTML" class="text-blue-500 hover:underline">YAML</a>
-        <br/>
-      } else {
-        <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "edit") + "?format=json")} hx-get={path.Join("/hx", "project", projectName, "edit") + "?format=json"} hx-replace-url="true" hx-target="#page" hx-swap="outerHTML" class="text-blue-500 hover:underline">JSON</a>
-        <br/>
-      }
+      <input type="radio" name="format" value="yaml" hx-get="#" hx-target="#page" hx-swap="outerHTML" hx-replace-url="true" checked?={ format == "yaml" } class="rounded-full border-gray-300 focus:ring-2 focus:ring-blue-300">YAML</input>
+      <input type="radio" name="format" value="json" hx-get="#" hx-target="#page" hx-swap="outerHTML" hx-replace-url="true" checked?={ format == "json" } class="rounded-full border-gray-300 focus:ring-2 focus:ring-blue-300">JSON</input>
       <textarea id="project-raw" name="project" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline h-64">{project}</textarea>
       <br/>
       <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">Submit</button>

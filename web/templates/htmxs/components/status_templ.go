@@ -329,7 +329,7 @@ func Statuses(projectName string, projectStats map[string]compose.ServiceStatus,
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" hx-target=\"#page\" hx-push-url=\"true\" class=\"text-blue-500 hover:underline\">New Service</a></td></tr>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" hx-target=\"#page\" hx-push-url=\"true\" class=\"mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded\">New Service</a></td></tr>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

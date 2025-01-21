@@ -7,37 +7,52 @@ import "inovasiriset.co.id/docker/manager/web/templates/htmxs/components"
 templ Service(layout bool, projectName string, serviceName string, service string, format string, err error) {
   if layout {
     @layouts.HTMX(projectName + "-" + serviceName){
-      <div id="page" hx-get={path.Join("/hx", "project", projectName , "service",  serviceName, "edit")} hx-swap="outerHTML" hx-trigger="load" hx-indicator="#page-load-indicator"></div>
+      if service == "" {
+        <div id="page" hx-get={path.Join("/hx", "project", projectName , "service-new")} hx-swap="outerHTML" hx-trigger="load" hx-indicator="#page-load-indicator"></div>
+      } else {
+        <div id="page" hx-get={path.Join("/hx", "project", projectName , "service",  serviceName, "edit")} hx-swap="outerHTML" hx-trigger="load" hx-indicator="#page-load-indicator"></div>
+      }
     }
     {{ return }}
   }
-  @components.Breadcrumbs([]components.Breadcrumb{
-    { Text: "Home", Link: "/hx" },
-    { Text: projectName, Link: path.Join("/hx", "project", projectName) },
-    { Text: serviceName },
-  }...)
-  <title>{projectName} - {serviceName}</title>
+  {{
+  if format == "" {
+    format = "json"
+  }
+  }}
+  if service != "" {
+    @components.Breadcrumbs([]components.Breadcrumb{
+      { Text: "Home", Link: "/hx" },
+      { Text: projectName, Link: path.Join("/hx", "project", projectName) },
+      { Text: serviceName },
+    }...)
+    <title>{projectName} - {serviceName}</title>
+  } else {
+    @components.Breadcrumbs([]components.Breadcrumb{
+      { Text: "Home", Link: "/hx" },
+      { Text: projectName, Link: path.Join("/hx", "project", projectName) },
+      { Text: "New Service" },
+    }...)
+    <title>{projectName} - New Service</title>
+  }
   <div id="page" hx-swap-oob="outerHTML" class="container p-4" hx-boost="true">
+    if service != "" {
+      <h1 class="text-3xl font-bold mb-4">Edit Service: {serviceName}</h1>
+    } else {
+      <h1 class="text-3xl font-bold mb-4">New Service</h1>
+    }
     <form hx-post={path.Join("/hx", "project", projectName , "service",  serviceName)}>
       if serviceName == "" {
-        <label for="service-name">Name: 
-          <input id="service-name" name="name" type="text">
-        </label>
+        <label for="service-name" class="block text-gray-700 text-sm font-bold mb-2">Name: </label>
+        <input id="service-name" name="name" type="text" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
       }
       if err != nil {
         <span style="color: red;">{err.Error()}</span>
         <br/>
       }
-      <input type="hidden" name="format" value={format} />
-      if format == "json" {
-        <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service", serviceName, "edit") + "?format=yaml")} hx-target="#page" hx-swap="outerHTML" hx-replace-url="true">YAML</a>
-        <br/>
-      } else {
-        <a href={templ.SafeURL(path.Join("/hx", "project", projectName, "service", serviceName, "edit") + "?format=json")} hx-target="#page" hx-swap="outerHTML" hx-replace-url="true">JSON</a>
-        <br/>
-      }
-      <input type="hidden" name="format" value={format} />
-      <textarea id="service-detail" name={format} style="width: 100%; height: 400px;">
+      <input type="radio" name="format" value="yaml" hx-get="#" hx-target="#page" hx-swap="outerHTML" hx-replace-url="true" checked?={ format == "yaml" } class="rounded-full border-gray-300 focus:ring-2 focus:ring-blue-300">YAML</input>
+      <input type="radio" name="format" value="json" hx-get="#" hx-target="#page" hx-swap="outerHTML" hx-replace-url="true" checked?={ format == "json" } class="rounded-full border-gray-300 focus:ring-2 focus:ring-blue-300">JSON</input>
+      <textarea id="service-detail" name={format} class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline h-64">
         if service != "" {
           {service}
         } else if format  == "json" {
@@ -45,7 +60,14 @@ templ Service(layout bool, projectName string, serviceName string, service strin
         }
       </textarea>
       <br/>
-      <button type="submit">Submit</button>
+      <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">Submit</button>
     </form>
   </div>
+}
+
+func isChecked(cur, val string ) string {
+  if cur == val {
+    return "true"
+  }
+  return "false"
 }

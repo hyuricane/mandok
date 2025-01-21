@@ -2,6 +2,6 @@ package components
 
 templ Error(err error, id string) {
   if err != nil {
-  <span id={id} hx-swap-oob="true" style="display: block; color: red; font-size: small;">{err.Error()}</span>
+    <span id={id} hx-swap-oob="true" class="text-red-500 text-sm block">{err.Error()}</span>
   }
 }
