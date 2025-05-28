@@ -2,7 +2,6 @@ package hx
 
 import (
 	"path"
-	"strings"
 
 	"github.com/labstack/echo/v4"
 	"inovasiriset.co.id/docker/manager/app/lib/compose"
@@ -28,7 +27,7 @@ func envs(c echo.Context) error {
 	}
 	project, err := compose.GetProject(projectDir, true)
 	if err != nil {
-		return components.Envs(projectName, nil, nil, err).Render(c.Request().Context(), c.Response().Writer)
+		return components.Envs(projectName, nil, err).Render(c.Request().Context(), c.Response().Writer)
 	}
 
 	if format != "yaml" {
@@ -36,12 +35,12 @@ func envs(c echo.Context) error {
 	}
 
 	if project == nil {
-		return components.Envs(projectName, nil, nil, nil).Render(c.Request().Context(), c.Response().Writer)
+		return components.Envs(projectName, nil, nil).Render(c.Request().Context(), c.Response().Writer)
 	}
 
-	plain, secret, err := compose.ReadEnvFile(projectDir, true)
+	envVals, err := compose.ReadEnvFile(projectDir, true)
 
-	return components.Envs(projectName, plain, secret, err).Render(c.Request().Context(), c.Response().Writer)
+	return components.Envs(projectName, envVals, err).Render(c.Request().Context(), c.Response().Writer)
 }
 
 func setEnv(c echo.Context) error {
@@ -57,42 +56,35 @@ func setEnv(c echo.Context) error {
 	if projectDir == "" {
 		return c.Redirect(302, "/hx/")
 	}
-	plain, secret, err := compose.ReadEnvFile(projectDir, false)
+	envVals, err := compose.ReadEnvFile(projectDir, false)
 	if err != nil {
 		return err
 	}
+	exists := map[string]int{}
+	for i, v := range envVals {
+		exists[v.Key] = i
+	}
 	if envs != "" {
-		newPlains := map[string]string{}
-		lines := strings.Split(envs, "\n")
-		for _, line := range lines {
-			line = strings.TrimSpace(line)
-			if strings.HasPrefix(line, "#") {
-				continue
-			}
-			if line == "" {
-				continue
-			}
-			linec := strings.SplitN(line, "=", 2)
-			if len(linec) == 2 {
-				newPlains[linec[0]] = linec[1]
-			}
+		newEnvVals, err := compose.ReadEnvsFromBytes([]byte(envs))
+		if err != nil {
+			return err
 		}
-		for k, v := range newPlains {
-			plain[k] = v
-			delete(secret, k)
+		for _, v := range newEnvVals {
+			if i, ok := exists[v.Key]; ok { // exists
+				envVals[i] = v
+			} else {
+				envVals = append(envVals, v)
+			}
 		}
 	}
 	if name != "" {
-		if path.Base(c.Path()) == "plain" {
-			plain[name] = value
-			delete(secret, name)
-		} else {
-			secret[name] = value
-			delete(plain, name)
+		if i, ok := exists[name]; ok {
+			envVals[i].Val = value
+			envVals[i].Secret = path.Base(c.Path()) != "plain"
 		}
 	}
 
-	err = compose.WriteEnvFile(projectDir, plain, secret)
+	err = compose.WriteEnvFile(projectDir, envVals)
 	if err != nil {
 		return err
 	}
@@ -107,15 +99,18 @@ func setEnvSecret(c echo.Context) error {
 	if projectDir == "" {
 		return c.Redirect(302, "/hx/")
 	}
-	plain, secret, err := compose.ReadEnvFile(projectDir, false)
+	envVals, err := compose.ReadEnvFile(projectDir, false)
 	if err != nil {
 		return err
 	}
-	if v, ok := plain[name]; ok {
-		secret[name] = v
-		delete(plain, name)
+	exists := map[string]int{}
+	for i, v := range envVals {
+		exists[v.Key] = i
 	}
-	err = compose.WriteEnvFile(projectDir, plain, secret)
+	if i, ok := exists[name]; ok {
+		envVals[i].Secret = true
+	}
+	err = compose.WriteEnvFile(projectDir, envVals)
 	if err != nil {
 		return err
 	}
@@ -130,13 +125,18 @@ func deleteEnv(c echo.Context) error {
 	if projectDir == "" {
 		return c.Redirect(302, "/hx/")
 	}
-	plain, secret, err := compose.ReadEnvFile(projectDir, false)
+	envVals, err := compose.ReadEnvFile(projectDir, false)
 	if err != nil {
 		return err
 	}
-	delete(plain, name)
-	delete(secret, name)
-	err = compose.WriteEnvFile(projectDir, plain, secret)
+	exists := map[string]int{}
+	for i, v := range envVals {
+		exists[v.Key] = i
+	}
+	if i, ok := exists[name]; ok {
+		envVals = append(envVals[:i], envVals[i+1:]...)
+	}
+	err = compose.WriteEnvFile(projectDir, envVals)
 	if err != nil {
 		return err
 	}

@@ -1,11 +1,11 @@
 package components
 
 import "path"
+import "inovasiriset.co.id/docker/manager/app/lib/compose"
 
-templ Envs(projectName string, plain, secret map[string]string, err error) {
+templ Envs(projectName string, envVals []compose.EnvVal, err error) {
 	<div id="project-envs" hx-get={path.Join("/hx", "project", projectName, "envs")} hx-swap-oob="outerHTML" hx-trigger="updateEnvs from:body" hx-indicator="#page-load-indicator" class="p-4">
 		<h2 class="text-2xl font-bold mb-4">Envs</h2>
-		<h3 class="text-xl font-medium mb-2">Plain</h3>
 		<table class="min-w-full divide-y divide-gray-200">
 			<thead>
 				<tr class="bg-gray-50">
@@ -15,13 +15,13 @@ templ Envs(projectName string, plain, secret map[string]string, err error) {
 				</tr>
 			</thead>
 			<tbody>
-				for k, v := range plain {
+				for _, v := range envVals {
 					<tr class="hover:bg-gray-100">
-						<td class="px-6 py-4 whitespace-nowrap">{k}</td>
-						<td class="px-6 py-4 whitespace-nowrap">{v}</td>
+						<td class="px-6 py-4 whitespace-nowrap">{v.Key}</td>
+						<td class="px-6 py-4 whitespace-nowrap">{v.Val}</td>
 						<td class="px-6 py-4 whitespace-nowrap">
-							<a href={templ.SafeURL(path.Join("/hx", "project", projectName, "envs", "delete", k))} hx-get={path.Join("/hx", "project", projectName, "envs", "delete", k)} hx-confirm={"delete " + k +" env var?"} hx-swap="none" class="text-red-500 hover:underline mr-2">delete</a>
-							<a href={templ.SafeURL(path.Join("/hx", "project", projectName, "envs", "secret", k))} hx-get={path.Join("/hx", "project", projectName, "envs", "secret", k)} hx-confirm={"make " + k + " env var secret?"} hx-swap="none" class="text-blue-500 hover:underline">secret</a>
+							<a href={templ.SafeURL(path.Join("/hx", "project", projectName, "envs", "delete", v.Key))} hx-get={path.Join("/hx", "project", projectName, "envs", "delete", v.Key)} hx-confirm={"delete " + v.Key +" env var?"} hx-swap="none" class="text-red-500 hover:underline mr-2">delete</a>
+							<a href={templ.SafeURL(path.Join("/hx", "project", projectName, "envs", "secret", v.Key))} hx-get={path.Join("/hx", "project", projectName, "envs", "secret", v.Key)} hx-confirm={"make " + v.Key + " env var secret?"} hx-swap="none" class="text-blue-500 hover:underline">secret</a>
 						</td>
 					</tr>
 				}
@@ -33,33 +33,6 @@ templ Envs(projectName string, plain, secret map[string]string, err error) {
 					<td class="px-6 py-4 whitespace-nowrap">
 						<button type="button" hx-post={path.Join("/hx", "project", projectName, "envs", "plain")} hx-swap="none" hx-indicator="#page-load-indicator" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">+</button>
 					</td>
-				</tr>
-			</tfoot>
-		</table>
-
-		<h3 class="text-xl font-medium mb-2 mt-4">Secret</h3>
-		<table class="min-w-full divide-y divide-gray-200">
-			<thead>
-				<tr class="bg-gray-50">
-					<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-					<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">...</th>
-				</tr>
-			</thead>
-			<tbody>
-				for k := range secret {
-					<tr class="hover:bg-gray-100">
-						<td class="px-6 py-4 whitespace-nowrap">{k}</td>
-						<td class="px-6 py-4 whitespace-nowrap"><a href={templ.SafeURL(path.Join("/hx", "project", projectName, "envs", "delete", k))} hx-get={path.Join("/hx", "project", projectName, "envs", "delete", k)} hx-swap="none" hx-confirm={"delete " + k +" env var?"} class="text-red-500 hover:underline">delete</a></td>
-					</tr>
-				}
-			</tbody>
-			<tfoot>
-				<tr id="add-env-secret" hx-include="#add-env-secret>td>input" class="hover:bg-gray-100">
-					<td class="px-6 py-4 whitespace-nowrap"><input name="name" class="border rounded px-2 py-1 w-full" /></td>
-					<td class="px-6 py-4 whitespace-nowrap">
-            <input name="value" class="border rounded px-2 py-1 w-4/5" />
-						<button type="button" hx-post={path.Join("/hx", "project", projectName, "envs", "secret")} hx-swap="none" hx-indicator="#page-load-indicator" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">+</button>
-          </td>
 				</tr>
 			</tfoot>
 		</table>

@@ -5,7 +5,7 @@ import "path"
 import "inovasiriset.co.id/docker/manager/web/templates/components"
 import "inovasiriset.co.id/docker/manager/web/templates/layouts"
 
-templ Project(projectName string, projectStats map[string]compose.ServiceStatus, envPlain, envSecret map[string]string) {
+templ Project(projectName string, projectStats map[string]compose.ServiceStatus, envVals []compose.EnvVal) {
   @layouts.MainLayout(projectName, ){
     @components.Breadcrumbs([]components.Breadcrumb{
       { Text: "Home", Link: "/" },
@@ -18,7 +18,7 @@ templ Project(projectName string, projectStats map[string]compose.ServiceStatus,
       <a href={templ.SafeURL(path.Join("/", "project", projectName, "edit"))}>Edit</a>
     </div>
     @components.Statuses(projectName, projectStats)
-    @components.Envs(projectName, envPlain, envSecret)
+    @components.Envs(projectName, envVals)
   }
 }
 

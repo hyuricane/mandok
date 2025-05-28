@@ -320,15 +320,10 @@ func getRoutes(c echo.Context) error {
 	return c.JSON(200, routes)
 }
 
-type EnvBody struct {
-	Plain  map[string]string `json:"plain"`
-	Secret map[string]string `json:"secret"`
-}
-
 func setEnvs(c echo.Context) error {
 	name := c.Param("name")
-	body := EnvBody{}
-	err := c.Bind(&body)
+	newEnvVals := []compose.EnvVal{}
+	err := c.Bind(&newEnvVals)
 	if err != nil {
 		return c.JSON(400, map[string]string{
 			"message": err.Error(),
@@ -341,24 +336,26 @@ func setEnvs(c echo.Context) error {
 		})
 	}
 	// read from existing .env file
-	plain, secret, err := compose.ReadEnvFile(projectDir, false)
+	envVals, err := compose.ReadEnvFile(projectDir, false)
 	if err != nil {
-		return c.JSON(500, map[string]string{
-			"message": err.Error(),
-		})
+		return err
+	}
+	exists := map[string]int{}
+	for i, v := range envVals {
+		exists[v.Key] = i
 	}
 	// merge envs
-	for k, v := range body.Plain {
-		plain[k] = v
-		delete(secret, k)
-	}
-	for k, v := range body.Secret {
-		secret[k] = v
-		delete(plain, k)
+	for _, v := range newEnvVals {
+		if i, ok := exists[v.Key]; ok {
+			envVals[i].Val = v.Val
+			envVals[i].Secret = v.Secret
+		} else {
+			envVals = append(envVals, v)
+		}
 	}
 
 	// write to env files
-	err = compose.WriteEnvFile(projectDir, plain, secret)
+	err = compose.WriteEnvFile(projectDir, envVals)
 	if err != nil {
 		return c.JSON(500, map[string]string{
 			"message": err.Error(),
@@ -378,7 +375,7 @@ func getEnvs(c echo.Context) error {
 		})
 	}
 	// read .env file
-	plain, secret, err := compose.ReadEnvFile(projectDir, true)
+	envVals, err := compose.ReadEnvFile(projectDir, true)
 	if err != nil {
 		return c.JSON(500, map[string]string{
 			"message": err.Error(),
@@ -386,8 +383,7 @@ func getEnvs(c echo.Context) error {
 	}
 	return c.JSON(200, map[string]interface{}{
 		"message": "ok",
-		"plain":   plain,
-		"secret":  secret,
+		"envs":    envVals,
 	})
 }
 
@@ -400,15 +396,18 @@ func deleteEnv(c echo.Context) error {
 			"message": "project not found",
 		})
 	}
-	plain, secret, err := compose.ReadEnvFile(projectDir, false)
+	envVals, err := compose.ReadEnvFile(projectDir, false)
 	if err != nil {
-		return c.JSON(500, map[string]string{
-			"message": err.Error(),
-		})
+		return err
 	}
-	delete(plain, envname)
-	delete(secret, envname)
-	err = compose.WriteEnvFile(projectDir, plain, secret)
+	exists := map[string]int{}
+	for i, v := range envVals {
+		exists[v.Key] = i
+	}
+	if i, ok := exists[envname]; ok {
+		envVals = append(envVals[:i], envVals[i+1:]...)
+	}
+	err = compose.WriteEnvFile(projectDir, envVals)
 	if err != nil {
 		return c.JSON(500, map[string]string{
 			"message": err.Error(),
