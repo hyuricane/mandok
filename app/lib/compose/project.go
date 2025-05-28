@@ -4,13 +4,21 @@ import (
 	"bytes"
 	"encoding/json"
 	"log"
+	"net/url"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
+
+func init() {
+	if err := login(); err != nil {
+		panic(err)
+	}
+}
 
 type ComposeProjectYaml struct {
 	Name     string                            `yaml:"-" json:"name,omitempty"`
@@ -248,4 +256,42 @@ func GetProjects() ([]string, error) {
 		}
 	}
 	return projects, nil
+}
+
+func login() error {
+	// go to project directory and trigger docker compose up
+	registryAuth := os.Getenv("REGISTRY_AUTHS")
+	if registryAuth == "" {
+		return nil
+	}
+
+	parsed, err := url.Parse("http://" + registryAuth)
+	if err != nil {
+		return err
+	}
+	args := []string{
+		"login",
+	}
+	password := ""
+	if parsed.User != nil {
+		args = append(args, "-u "+parsed.User.Username())
+		if pass, ok := parsed.User.Password(); ok {
+			password = pass
+			args = append(args, "--password-stdin")
+		}
+	}
+
+	args = append(args, parsed.Host)
+	cmd := exec.Command("docker", args...)
+	if password != "" {
+		cmd.Stdin = strings.NewReader(password)
+	}
+	out, err := doExec(cmd)
+	if err != nil {
+		return NewComposeError(bytes.NewBufferString(err.Error()))
+	}
+	if out == nil {
+		return nil
+	}
+	return nil
 }
