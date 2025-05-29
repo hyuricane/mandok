@@ -1,3 +1,3 @@
 # !/bin/bash
 cd nodejs && npx tailwindcss -i ../static/input.css -o ../static/main.css && cd ..
-templ generate
+go tool templ generate

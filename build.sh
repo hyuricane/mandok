@@ -2,4 +2,4 @@
 if [[ "$*" == *"--ui"* ]]; then
   ./view.sh
 fi
-go build -o ./dist/mandok main.go
+CGO_ENABLED=0 go build -o ./dist/mandok main.go
