@@ -14,11 +14,12 @@ import (
 const PROJECT_DIRS = "projects"
 
 func RouteCompose(group *echo.Group) {
+	group.GET("", getProjects)
 	group.POST("/:name", createProject)
 	group.GET("/:name", getProject)
+	group.GET("/:name/service", getStatus)
 	group.GET("/:name/service/:service", getService)
 	group.POST("/:name/service/:service", createService)
-	group.GET("/:name/status", getStatus)
 	group.POST("/:name/start", startProject)
 	group.POST("/:name/stop", stopProject)
 	group.DELETE("/:name", deleteProject)
@@ -32,6 +33,16 @@ func RouteCompose(group *echo.Group) {
 	group.DELETE("/:name/envs/:envname", deleteEnv)
 
 	group.GET("/:name/service/:service/logs", getLogs)
+}
+
+func getProjects(c echo.Context) error {
+	projects, err := compose.GetProjects()
+	if err != nil {
+		return c.JSON(500, map[string]string{
+			"message": err.Error(),
+		})
+	}
+	return c.JSON(200, projects)
 }
 
 func createProject(c echo.Context) error {
@@ -129,7 +140,6 @@ func getStatus(c echo.Context) error {
 			"message": "project not found",
 		})
 	}
-	all := c.QueryParam("all")
 	services := []string{}
 	for k, v := range c.Request().URL.Query() {
 		// keys = append(keys, k)
@@ -138,7 +148,7 @@ func getStatus(c echo.Context) error {
 			continue
 		}
 	}
-	status, err := compose.GetStatus(projectDir, all == "true", services...)
+	status, err := compose.GetStatus(projectDir, true, services...)
 	if err != nil {
 		return c.JSON(500, map[string]string{
 			"message": err.Error(),
