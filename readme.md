@@ -105,3 +105,229 @@ docker-compose up -d
 - Multiple Docker registries can be configured through `REGISTRY_AUTHS`
 - Projects are mounted in `/usr/src/app/projects`
 
+## API Documentation
+
+### Projects
+
+#### List Projects
+```http
+GET /api/v1/compose
+```
+
+Response body:
+```json
+["project1", "project2"]
+```
+
+### Services
+
+#### List Services
+```http
+GET /api/v1/compose/{name}/service
+```
+
+Parameters:
+- `name` (path, required) - Project name
+- `service` (query, optional, repeatable) - Filter specific services
+
+Response body:
+```json
+{
+  "service1": {
+    "Name": "service1",
+    "State": "running",
+    "Image": "nginx:latest",
+    "Expected": 1,
+    "Running": 1
+  },
+  "service2": {
+    "Name": "service2",
+    "State": "running",
+    "Image": "redis:latest",
+    "Expected": 1,
+    "Running": 1
+  }
+}
+```
+
+Example Requests:
+```bash
+# Get all services including stopped ones
+curl -X GET "http://mandok.local/api/v1/compose/myproject/service"
+
+# Get specific services only
+curl -X GET "http://mandok.local/api/v1/compose/myproject/service?service=web&service=db"
+```
+
+#### Get Service Details
+```http
+GET /api/v1/compose/{name}/service/{service}
+```
+
+Path Parameters:
+- `name` (required) - Project name
+- `service` (required) - Service name
+
+#### Create/Update Service
+```http
+POST /api/v1/compose/{name}/service/{service}
+```
+
+Path Parameters:
+- `name` (required) - Project name
+- `service` (required) - Service name
+
+Request body:
+```json
+{
+  "image": "nginx:latest",
+  "ports": ["80:80"],
+  "environment": ["KEY=value"]
+}
+```
+
+### Project Operations
+
+#### Get Project Status
+```http
+GET /api/v1/compose/{name}/status
+```
+
+Path Parameters:
+- `name` (required) - Project name
+
+Query Parameters:
+- `all` (optional) - boolean - Include stopped containers
+- `service` (optional, repeatable) - string - Filter by service name(s)
+
+Example Requests:
+```bash
+# Get all services including stopped ones
+curl -X GET "http://mandok.local/api/v1/compose/myproject/status?all=true"
+
+# Get specific services only
+curl -X GET "http://mandok.local/api/v1/compose/myproject/status?service=web&service=db"
+```
+
+#### Start Project
+```http
+POST /api/v1/compose/{name}/start
+```
+
+Path Parameters:
+- `name` (required) - Project name
+
+Query Parameters:
+- `restart` (optional) - boolean - Force restart containers
+- `pull` (optional) - boolean - Pull images before starting
+- `service` (optional, repeatable) - string - Start specific service(s)
+
+#### Stop Project
+```http
+POST /api/v1/compose/{name}/stop
+```
+
+Path Parameters:
+- `name` (required) - Project name
+
+Query Parameters:
+- `service` (optional, repeatable) - string - Stop specific service(s)
+
+#### Delete Project
+```http
+DELETE /api/v1/compose/{name}
+```
+
+Path Parameters:
+- `name` (required) - Project name
+
+### Routing
+
+#### Create Service Route
+```http
+POST /api/v1/compose/{name}/route/{service}
+```
+
+Path Parameters:
+- `name` (required) - Project name
+- `service` (required) - Service name
+
+Request body:
+```json
+{
+  "domain": "app.example.com",
+  "path": "/api",
+  "port": 8080,
+  "ssl": true
+}
+```
+
+#### Delete Service Route
+```http
+DELETE /api/v1/compose/{name}/route/{service}
+```
+
+Path Parameters:
+- `name` (required) - Project name
+- `service` (required) - Service name
+
+#### List Routes
+```http
+GET /api/v1/compose/{name}/route
+```
+
+Path Parameters:
+- `name` (required) - Project name
+
+### Environment Variables
+
+#### Set Environment Variables
+```http
+POST /api/v1/compose/{name}/envs
+```
+
+Path Parameters:
+- `name` (required) - Project name
+
+Request body:
+```json
+[
+  {
+    "key": "DATABASE_URL",
+    "val": "postgresql://localhost:5432/db",
+    "secret": false
+  }
+]
+```
+
+#### Get Environment Variables
+```http
+GET /api/v1/compose/{name}/envs
+```
+
+Path Parameters:
+- `name` (required) - Project name
+
+#### Delete Environment Variable
+```http
+DELETE /api/v1/compose/{name}/envs/{envname}
+```
+
+Path Parameters:
+- `name` (required) - Project name
+- `envname` (required) - Environment variable name
+
+### Logs
+
+#### Stream Service Logs
+```http
+GET /api/v1/compose/{name}/service/{service}/logs
+```
+
+Path Parameters:
+- `name` (required) - Project name
+- `service` (required) - Service name
+
+Query Parameters:
+- `tail` (optional) - integer - Number of historical log lines (default: 10)
+
