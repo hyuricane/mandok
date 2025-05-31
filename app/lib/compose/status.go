@@ -33,7 +33,7 @@ type ServiceStatus struct {
 	Image    string `json:"Image"`
 	Expected int    `json:"Expected"`
 	Running  int    `json:"Running"`
-	Route    string `json:"Route"`
+	Route    string `json:"Route,omitempty"`
 }
 
 func GetStatus(projectDir string, all bool, services ...string) (map[string]ServiceStatus, error) {
