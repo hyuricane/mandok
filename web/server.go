@@ -14,6 +14,7 @@ import (
 func ListenHttp() error {
 	app := echo.New()
 	app.HideBanner = true
+	app.Pre(middleware.RemoveTrailingSlash())
 	app.Use(middleware.Recover())
 	app.HTTPErrorHandler = func(err error, c echo.Context) {
 		if c.Response().Committed {
