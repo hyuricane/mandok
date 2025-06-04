@@ -14,5 +14,6 @@ FROM docker:cli
 WORKDIR /usr/src/app
 ENV PORT=80
 COPY --from=compiler /usr/src/app/mandok ./mandok
+COPY --from=compiler /usr/src/app/static ./static
 VOLUME /usr/src/app/projects
 CMD ["./mandok"]

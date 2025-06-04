@@ -1,0 +1,8 @@
+FROM docker:cli
+
+WORKDIR /usr/src/app
+ENV PORT=80
+COPY ./dist/mandok ./mandok
+COPY ./static ./static
+VOLUME /usr/src/app/projects
+CMD ["./mandok"]
