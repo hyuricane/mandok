@@ -17,9 +17,9 @@ templ Envs(projectName string, envVals []compose.EnvVal, err error) {
 			<tbody>
 				for _, v := range envVals {
 					<tr class="hover:bg-gray-100">
-						<td class="px-6 py-4 whitespace-nowrap">{v.Key}</td>
-						<td class="px-6 py-4 whitespace-nowrap">{v.Val}</td>
-						<td class="px-6 py-4 whitespace-nowrap">
+						<td class="px-6 py-2">{v.Key}</td>
+						<td class="px-6 py-2">{v.Val}</td>
+						<td class="px-6 py-2 whitespace-nowrap">
 							<a href={templ.SafeURL(path.Join("/hx", "project", projectName, "envs", "delete", v.Key))} hx-get={path.Join("/hx", "project", projectName, "envs", "delete", v.Key)} hx-confirm={"delete " + v.Key +" env var?"} hx-swap="none" class="text-red-500 hover:underline mr-2">delete</a>
 							<a href={templ.SafeURL(path.Join("/hx", "project", projectName, "envs", "secret", v.Key))} hx-get={path.Join("/hx", "project", projectName, "envs", "secret", v.Key)} hx-confirm={"make " + v.Key + " env var secret?"} hx-swap="none" class="text-blue-500 hover:underline">secret</a>
 						</td>
