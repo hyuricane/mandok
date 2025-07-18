@@ -1,6 +1,7 @@
 package web
 
 import (
+	"io/fs"
 	"os"
 
 	"github.com/labstack/echo/v4"
@@ -11,7 +12,20 @@ import (
 	"inovasiriset.co.id/docker/manager/web/middlewares"
 )
 
-func ListenHttp() error {
+type FallingBackFS struct {
+	FSs []fs.FS
+}
+
+func (f *FallingBackFS) Open(name string) (fs.File, error) {
+	for _, fsys := range f.FSs {
+		file, err := fsys.Open(name)
+		if err == nil {
+			return file, nil
+		}
+	}
+	return nil, fs.ErrNotExist
+}
+func ListenHttp(statics map[string][]fs.FS) error {
 	app := echo.New()
 	app.HideBanner = true
 	app.Pre(middleware.RemoveTrailingSlash())
@@ -23,7 +37,19 @@ func ListenHttp() error {
 		c.Logger().Error(err)
 		c.Echo().DefaultHTTPErrorHandler(err, c)
 	}
-	app.Static("/static", "./static")
+	for prefix, fsys := range statics {
+		if fsys == nil {
+			continue
+		}
+		if len(fsys) == 0 {
+			continue
+		}
+		if len(fsys) == 1 {
+			app.StaticFS(prefix, fsys[0])
+		} else {
+			app.StaticFS(prefix, &FallingBackFS{FSs: fsys})
+		}
+	}
 	dashboard.RouteDashboard(app.Group(""))
 	hx.RouteDashboard(app.Group("/hx"))
 
