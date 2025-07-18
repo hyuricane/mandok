@@ -18,6 +18,13 @@ func init() {
 	if err := login(); err != nil {
 		panic(err)
 	}
+
+	// create project dirs if not exists
+	if _, err := os.Stat(PROJECT_DIRS); os.IsNotExist(err) {
+		if err := os.MkdirAll(PROJECT_DIRS, 0755); err != nil {
+			log.Fatalf("[ERROR] create project dirs %v", err)
+		}
+	}
 }
 
 type ComposeProjectYaml struct {
