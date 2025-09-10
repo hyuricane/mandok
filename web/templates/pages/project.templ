@@ -13,8 +13,8 @@ templ Project(projectName string, projectStats map[string]compose.ServiceStatus,
     }...)
     <h1>{projectName}</h1>
     <div>
-      <a href={templ.SafeURL(path.Join("/", "project", projectName, "start"))}>Start All</a>
-      <a href={templ.SafeURL(path.Join("/", "project", projectName, "down"))}>Down</a>
+      <a x-target.replace="_none" href={templ.SafeURL(path.Join("/", "project", projectName, "start"))}>Start All</a>
+      <a x-target.replace="_none" href={templ.SafeURL(path.Join("/", "project", projectName, "down"))}>Down</a>
       <a href={templ.SafeURL(path.Join("/", "project", projectName, "edit"))}>Edit</a>
     </div>
     @components.Statuses(projectName, projectStats)

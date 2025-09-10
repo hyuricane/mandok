@@ -6,7 +6,7 @@ import "fmt"
 
 
 templ Statuses(projectName string, projectStats map[string]compose.ServiceStatus) {
-  <table>
+  <table id="statuses" x-data="{}">
     <thead>
       <tr>
         <th>Service</th>
@@ -19,7 +19,7 @@ templ Statuses(projectName string, projectStats map[string]compose.ServiceStatus
     </thead>
     <tbody>
       for n, v := range projectStats {
-        <tr>
+        <tr id={ "service-item-" + v.Name} x-sync>
           <td>{n}</td>
           <td>{v.Image}</td>
           <td>{fmt.Sprintf("%d/%d", v.Running, v.Expected)}</td>
@@ -28,11 +28,11 @@ templ Statuses(projectName string, projectStats map[string]compose.ServiceStatus
             <td>
               <a href={templ.SafeURL(path.Join("/", "project", projectName, "service", n, "edit"))}>Edit</a> | 
           if v.State == "running" {
-            <a href={templ.SafeURL(path.Join("/", "project", projectName, "service", n, "stop"))}>Stop</a> | 
-            <a href={templ.SafeURL(path.Join("/", "project", projectName, "service", n, "pull"))}>pull</a> | 
-            <a href={templ.SafeURL(path.Join("/", "project", projectName, "service", n, "restart"))}>restart</a> | 
+            <a x-target="_none" href={templ.SafeURL(path.Join("/", "project", projectName, "service", n, "stop"))}>Stop</a> | 
+            <a x-target="_none" href={templ.SafeURL(path.Join("/", "project", projectName, "service", n, "pull"))}>pull</a> | 
+            <a x-target="_none" href={templ.SafeURL(path.Join("/", "project", projectName, "service", n, "restart"))}>restart</a> | 
           } else {
-            <a href={templ.SafeURL(path.Join("/", "project", projectName, "service", n, "start"))}>Start</a>
+            <a x-target="_none" href={templ.SafeURL(path.Join("/", "project", projectName, "service", n, "start"))}>Start</a>
           }
           if v.State != "" {
             <a href={templ.SafeURL(path.Join("/", "project", projectName, "service", n, "log"))} target="_blank">log</a>

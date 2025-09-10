@@ -137,12 +137,13 @@ func doEditProject(c echo.Context) error {
 	}
 	payload := c.FormValue(format)
 	newProject := compose.ComposeProjectYaml{}
-	if format == "yaml" {
+	switch format {
+	case "yaml":
 		err := yaml.NewDecoder(bytes.NewBufferString(payload)).Decode(&newProject)
 		if err != nil {
 			return pages.EditProject(projectName, string(payload), format, err).Render(c.Request().Context(), c.Response().Writer)
 		}
-	} else if format == "json" {
+	case "json":
 		err := json.NewDecoder(bytes.NewBufferString(payload)).Decode(&newProject)
 		if err != nil {
 			return pages.EditProject(projectName, string(payload), format, err).Render(c.Request().Context(), c.Response().Writer)
@@ -323,19 +324,31 @@ func doEditService(c echo.Context) error {
 func doAddService(c echo.Context) error {
 	projectName := c.Param("project")
 	serviceName := c.FormValue("name")
-	serviceJson := c.FormValue("json")
+	format := c.FormValue("format")
+	if format == "" {
+		format = "json"
+	}
+	payload := c.FormValue("content")
 	projectDir := compose.HasProject(projectName)
 	if projectDir == "" {
 		return c.Redirect(302, "/")
 	}
 	service := map[string]interface{}{}
-	err := json.NewDecoder(bytes.NewBufferString(serviceJson)).Decode(&service)
+	var err error
+	switch format {
+	case "json":
+		err = json.NewDecoder(bytes.NewBufferString(payload)).Decode(&service)
+	case "yaml":
+		err = yaml.NewDecoder(bytes.NewBufferString(payload)).Decode(&service)
+	default:
+		return c.Redirect(302, c.Path())
+	}
 	if err != nil {
-		return err
+		return pages.Service(projectName, serviceName, string(payload), format, err).Render(c.Request().Context(), c.Response().Writer)
 	}
 	err = compose.CreateService(projectDir, serviceName, service)
 	if err != nil {
-		return err
+		return pages.Service(projectName, serviceName, string(payload), format, err).Render(c.Request().Context(), c.Response().Writer)
 	}
 	return c.Redirect(302, "/project/"+projectName)
 }
