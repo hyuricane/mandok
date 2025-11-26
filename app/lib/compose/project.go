@@ -104,7 +104,7 @@ func GetProject(projectDir string, nointerpolate ...bool) (*ComposeProjectYaml, 
 	if len(nointerpolate) > 0 && nointerpolate[0] {
 		args = []string{"config", "--format", "json", "--no-interpolate", "--no-path-resolution"}
 	}
-	cmd := exec.Command("docker-compose", args...)
+	cmd := exec.Command("docker", append([]string{"compose"}, args...)...)
 	cmd.Dir = projectDir
 	out, err := doExec(cmd)
 	if err != nil {

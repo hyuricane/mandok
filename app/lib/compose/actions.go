@@ -14,7 +14,7 @@ func StartProject(projectDir string, restart bool, pull bool, services ...string
 		args = append(args, "--pull", "always", "--build")
 	}
 	args = append(args, services...)
-	cmd := exec.Command("docker-compose", args...)
+	cmd := exec.Command("docker", append([]string{"compose"}, args...)...)
 	cmd.Dir = projectDir
 	_, err := doExec(cmd)
 	if err != nil {
@@ -27,7 +27,7 @@ func StartProject(projectDir string, restart bool, pull bool, services ...string
 func StopProject(projectDir string, service ...string) error {
 	args := []string{"stop"}
 	args = append(args, service...)
-	cmd := exec.Command("docker-compose", args...)
+	cmd := exec.Command("docker", append([]string{"compose"}, args...)...)
 	cmd.Dir = projectDir
 
 	_, err := doExec(cmd)
@@ -43,7 +43,7 @@ func StopProject(projectDir string, service ...string) error {
 }
 
 func DownProject(projectDir string) error {
-	cmd := exec.Command("docker-compose", "down")
+	cmd := exec.Command("docker", "compose", "down")
 	cmd.Dir = projectDir
 	_, err := doExec(cmd)
 

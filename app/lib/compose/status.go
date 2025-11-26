@@ -102,7 +102,7 @@ func GetStatus(projectDir string, all bool, services ...string) (map[string]Serv
 		args = append(args, "-a")
 	}
 	args = append(args, services...)
-	cmd := exec.Command("docker-compose", args...)
+	cmd := exec.Command("docker", append([]string{"compose"}, args...)...)
 	cmd.Dir = projectDir
 
 	out, err := doExec(cmd)
@@ -143,7 +143,7 @@ func GetStatusExt(projectDir string, all bool, services ...string) (map[string]E
 		args = append(args, "-a")
 	}
 	args = append(args, services...)
-	cmd := exec.Command("docker-compose", args...)
+	cmd := exec.Command("docker", append([]string{"compose"}, args...)...)
 	cmd.Dir = projectDir
 
 	out, err := doExec(cmd)

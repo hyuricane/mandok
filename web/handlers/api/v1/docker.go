@@ -7,18 +7,16 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
-	"github.com/portainer/libcompose/docker"
-	"github.com/portainer/libcompose/docker/ctx"
-	"github.com/portainer/libcompose/project"
-	"github.com/portainer/libcompose/project/options"
 	"gopkg.in/yaml.v3"
 	mTypes "inovasiriset.co.id/docker/manager/types"
 )
@@ -148,14 +146,14 @@ func DetailContainer(c echo.Context) error {
 		})
 	}
 	if len(containers) == 1 {
-		rpid, err := dockerCli.ContainerExecCreate(context.TODO(), containers[0].ID, types.ExecConfig{
+		rpid, err := dockerCli.ContainerExecCreate(context.TODO(), containers[0].ID, container.ExecOptions{
 			Cmd: []string{"printenv"},
 		})
 		if err != nil {
 			log.Printf("[ERROR] exec error: %v", err)
 			return err
 		}
-		rp, err := dockerCli.ContainerExecAttach(context.TODO(), rpid.ID, types.ExecStartCheck{})
+		rp, err := dockerCli.ContainerExecAttach(context.TODO(), rpid.ID, container.ExecStartOptions{})
 		if err != nil {
 			log.Printf("[ERROR] attach error: %v", err)
 			return err
@@ -343,29 +341,43 @@ func getContainers(projectName string, containerName string) ([]types.Container,
 			listFilters.Add("label", "com.docker.compose.service="+containerName)
 		}
 	}
-	return dockerCli.ContainerList(context.TODO(), types.ContainerListOptions{Filters: listFilters})
+	return dockerCli.ContainerList(context.TODO(), container.ListOptions{Filters: listFilters})
 }
 
 func restartContainer(workdir string, containerName string, configFiles ...string) error {
-	projectApi, err := docker.NewProject(&ctx.Context{
-		ConfigDir: workdir,
-		Context: project.Context{
-			ComposeFiles: configFiles,
-			ProjectName:  filepath.Base(workdir),
-		},
-	}, nil)
-	if err != nil {
-		return err
+	// Build docker compose command arguments
+	args := []string{"compose"}
+
+	// Add config files
+	for _, configFile := range configFiles {
+		args = append(args, "-f", configFile)
 	}
-	ymlstr, err := projectApi.Config()
-	if err != nil {
-		return err
+
+	// Set project name based on workdir
+	projectName := filepath.Base(workdir)
+	args = append(args, "-p", projectName)
+
+	// Pull the latest image first
+	pullArgs := append(args, "pull", containerName)
+	pullCmd := exec.Command("docker", pullArgs...)
+	pullCmd.Dir = workdir
+	pullOut, pullErr := pullCmd.CombinedOutput()
+	if pullErr != nil {
+		log.Printf("[DEBUG] pull output: %s", string(pullOut))
+		log.Printf("[WARNING] pull error (continuing anyway): %v", pullErr)
+		// Continue even if pull fails - the image might already exist
 	}
-	log.Printf("[DEBUG] project yml %s", ymlstr)
-	err = projectApi.Pull(context.TODO(), containerName)
-	if err != nil {
-		return err
+
+	// Restart the container using up with force-recreate
+	upArgs := append(args, "up", "-d", "--force-recreate", containerName)
+	upCmd := exec.Command("docker", upArgs...)
+	upCmd.Dir = workdir
+	upOut, upErr := upCmd.CombinedOutput()
+	if upErr != nil {
+		log.Printf("[ERROR] up output: %s", string(upOut))
+		return upErr
 	}
-	err = projectApi.Up(context.TODO(), options.Up{}, containerName)
-	return err
+
+	log.Printf("[DEBUG] container %s restarted successfully", containerName)
+	return nil
 }
