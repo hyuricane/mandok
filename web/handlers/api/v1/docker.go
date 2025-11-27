@@ -1,15 +1,18 @@
 package v1
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -87,6 +90,7 @@ func RouteDocker(group *echo.Group) {
 	group.GET("/containers/:project/:container", DetailContainer)
 	group.PUT("/containers/:project/:container", UpdateContainer)
 	group.GET("/containers/:project/:container/restart", RestartContainer)
+	// group.POST("/containers/:project/:container/restart", RestartContainerPost)
 }
 
 func GetContainers(c echo.Context) error {
@@ -164,7 +168,14 @@ func DetailContainer(c echo.Context) error {
 			log.Printf("[ERROR] read error: %v", err)
 			return err
 		}
-		return c.JSON(200, containers[0])
+		return c.JSON(200, map[string]interface{}{
+			"ID":      containers[0].ID,
+			"Name":    containers[0].Names[0],
+			"Image":   containers[0].Image,
+			"ImageID": containers[0].ImageID,
+			"Status":  containers[0].Status,
+			"State":   containers[0].State,
+		})
 	}
 	return c.JSON(200, map[string]interface{}{
 		"message":    "too many containers found",
@@ -307,13 +318,20 @@ func RestartContainer(c echo.Context) error {
 				"message": "not restarted",
 			})
 		}
+		if c.Request().Header.Get("X-Image-Tag") != "" {
+			err = updateImageTagEnv(filepath.Join(workdir, ".env"), containerName, c.Request().Header.Get("X-Image-Tag"))
+			if err != nil {
+				log.Printf("[ERROR] update image tag error: %v", err)
+				return err
+			}
+		}
 		// docker compose command
 		err = restartContainer(workdir, containerName, strings.Split(containers[0].Labels["com.docker.compose.project.config_files"], ",")...)
 		if err != nil {
 			log.Printf("[ERROR] restart container error: %v", err)
 			return err
 		}
-		// log.Printf("[DEBUG] container %s updated: %v", containers[0].ID, updateOk)
+		// log.Printf("[DEBUG] container %s updated", containers[0].ID)
 		return c.JSON(200, map[string]string{
 
 			"project": projectName,
@@ -346,23 +364,42 @@ func getContainers(projectName string, containerName string) ([]types.Container,
 
 func restartContainer(workdir string, containerName string, configFiles ...string) error {
 	// Build docker compose command arguments
-	args := []string{"compose"}
+	cmdName := os.Getenv("DOCKER_COMPOSE_CMD_NAME")
+	if cmdName == "" {
+		cmdName = "docker compose"
+	}
+	args := []string{}
+	cleanEnv := cleanEnvVars()
 
+	projectName := ""
 	// Add config files
 	for _, configFile := range configFiles {
 		args = append(args, "-f", configFile)
+		configFileBytes, err := os.ReadFile(configFile)
+		if err != nil {
+			log.Printf("[ERROR] read config file error: %v", err)
+			return err
+		}
+		configFileYaml := yaml.NewDecoder(bytes.NewReader(configFileBytes))
+		var config map[string]any
+		configFileYaml.Decode(&config)
+		if name, ok := config["name"].(string); ok {
+			projectName = name
+		}
 	}
-
-	// Set project name based on workdir
-	projectName := filepath.Base(workdir)
+	if projectName == "" {
+		projectName = filepath.Base(workdir)
+	}
 	args = append(args, "-p", projectName)
 
 	// Pull the latest image first
 	pullArgs := append(args, "pull", containerName)
-	pullCmd := exec.Command("docker", pullArgs...)
+	pullCmd := exec.Command(cmdName, pullArgs...)
 	pullCmd.Dir = workdir
+	pullCmd.Env = cleanEnv
 	pullOut, pullErr := pullCmd.CombinedOutput()
 	if pullErr != nil {
+		log.Printf("[DEBUG] pull command: %s", pullCmd.String())
 		log.Printf("[DEBUG] pull output: %s", string(pullOut))
 		log.Printf("[WARNING] pull error (continuing anyway): %v", pullErr)
 		// Continue even if pull fails - the image might already exist
@@ -370,14 +407,90 @@ func restartContainer(workdir string, containerName string, configFiles ...strin
 
 	// Restart the container using up with force-recreate
 	upArgs := append(args, "up", "-d", "--force-recreate", containerName)
-	upCmd := exec.Command("docker", upArgs...)
+	upCmd := exec.Command(cmdName, upArgs...)
 	upCmd.Dir = workdir
+	upCmd.Env = cleanEnv
 	upOut, upErr := upCmd.CombinedOutput()
 	if upErr != nil {
-		log.Printf("[ERROR] up output: %s", string(upOut))
+		log.Printf("[DEBUG] up command: %s", upCmd.String())
+		log.Printf("[DEBUG] up output: %s", string(upOut))
+		log.Printf("[WARNING] up error (continuing anyway): %v", upErr)
 		return upErr
 	}
 
 	log.Printf("[DEBUG] container %s restarted successfully", containerName)
 	return nil
+}
+
+func updateImageTagEnv(envPath string, containerName string, imageTag string) error {
+	// Append timestamped image tag update to .env file
+	timestamp := time.Now().Format("2006-01-02 15:04:05")
+	envLine := fmt.Sprintf("# Updated %s\nIMAGE_TAG_%s=%s\n",
+		timestamp,
+		containerName,
+		imageTag)
+	var err error
+
+	// Append to .env file (creates if doesn't exist)
+	if _, err = os.Stat(envPath); err != nil && !os.IsNotExist(err) {
+		log.Printf("[ERROR] failed to write .env file: %v", err)
+		return err
+	}
+
+	// If file didn't exist, this creates it. If it did, we need to append
+	if os.IsNotExist(err) {
+		if err := os.WriteFile(envPath, []byte(envLine), 0o644); err != nil {
+			log.Printf("[ERROR] failed to create .env file: %v", err)
+			return err
+		}
+	} else {
+		// File exists, append to it
+		f, err := os.OpenFile(envPath, os.O_APPEND|os.O_WRONLY, 0o644)
+		if err != nil {
+			log.Printf("[ERROR] failed to open .env for append: %v", err)
+			return err
+		}
+		defer f.Close()
+
+		if _, err := f.WriteString(envLine + "\n"); err != nil {
+			log.Printf("[ERROR] failed to append to .env: %v", err)
+			return err
+		}
+	}
+
+	log.Printf("[INFO] Appended to .env: IMAGE_TAG_%s=%s at %s",
+		containerName,
+		imageTag,
+		timestamp)
+	return nil
+}
+
+func cleanEnvVars() []string {
+	env := os.Environ()
+	ommitedKeys := []string{
+		"DOCKER_HOST",
+		"REGISTRY_AUTHS",
+		"API_USERNAME",
+		"API_PASSWORD",
+		"PORT",
+		"IP",
+		"BASE_URL",
+		"DOCKER_COMPOSE_CMD_NAME",
+		"WORKDIRS",
+		"REGISTY_HOST",
+		"REGISTY_USERNAME",
+		"REGISTY_PASSWORD",
+		"MANDOK_DOMAIN",
+	}
+	result := []string{}
+nextVar:
+	for _, evar := range env {
+		for _, key := range ommitedKeys {
+			if strings.HasPrefix(evar, key+"=") {
+				continue nextVar
+			}
+		}
+		result = append(result, evar)
+	}
+	return result
 }

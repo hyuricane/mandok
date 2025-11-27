@@ -1,6 +1,6 @@
 module inovasiriset.co.id/docker/manager
 
-go 1.24.0
+go 1.24.9
 
 // replace github.com/docker/docker => github.com/docker/engine v0.0.0-20190725163905-fa8dd90ceb7b
 
