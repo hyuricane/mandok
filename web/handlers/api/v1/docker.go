@@ -477,9 +477,9 @@ func cleanEnvVars() []string {
 		"BASE_URL",
 		"DOCKER_COMPOSE_CMD_NAME",
 		"WORKDIRS",
-		"REGISTY_HOST",
-		"REGISTY_USERNAME",
-		"REGISTY_PASSWORD",
+		"REGISTRY_HOST",
+		"REGISTRY_USERNAME",
+		"REGISTRY_PASSWORD",
 		"MANDOK_DOMAIN",
 	}
 	result := []string{}
