@@ -107,7 +107,25 @@ tls:
    - Set `TRAEFIK_SSL=true`
    - Configure `LETSENCRYPT_EMAIL`
 
-### Linux Service
+### Linux Service (Automated Install)
+
+You can use the provided installer script to build and install Mandok as a systemd service:
+
+```sh
+sudo ./install.sh
+```
+
+This will:
+1. Install the binary from `./dist` to `/opt/mandok`.
+2. Set up and start the systemd service.
+
+To uninstall:
+
+```sh
+sudo ./uninstall.sh
+```
+
+### Linux Service (Manual Install)
 
 Create a service file at `/etc/systemd/system/mandok.service`:
 ```ini
