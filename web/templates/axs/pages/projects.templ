@@ -1,0 +1,124 @@
+package pages
+
+import (
+	"fmt"
+	"inovasiriset.co.id/docker/manager/web/templates/axs/components"
+	"inovasiriset.co.id/docker/manager/web/templates/layouts"
+	"path"
+)
+
+templ contentNewProject(err error) {
+	<title>New Project</title>
+	<h1 class="text-3xl font-bold mb-4">New Project</h1>
+	<form x-target.push="page" method="POST" action="/ax/project-new" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+		<label for="project-name" class="block text-gray-700 text-sm font-bold mb-2">Name: </label>
+		<input id="project-name" name="name" type="text" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required/>
+		<br/>
+		@components.Error(err, "new-project-error")
+		<br/>
+		<button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Submit</button>
+	</form>
+}
+
+templ NewProject(layout bool, err error) {
+	{{ breadcrumbs := []components.Breadcrumb{{Text: "Home", Link: "/ax"}, {Text: "New Project"}} }}
+	if layout {
+		@layouts.AX("New Project", breadcrumbs...) {
+			<div id="page" x-sync class="container p-4">
+				@contentNewProject(err)
+			</div>
+		}
+		{{ return }}
+	}
+	@components.Breadcrumbs(breadcrumbs...)
+	<div id="page" x-sync class="container p-4">
+		@contentNewProject(err)
+	</div>
+}
+
+templ contentProject(projectName string, err error) {
+	<title>{ projectName }</title>
+	<div class="flex space-x-4 mb-4">
+		<a
+			href={ templ.SafeURL(path.Join("/ax", "project", projectName, "start")) }
+			x-target="project-status"
+			class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+		>Start All</a>
+		<a
+			href={ templ.SafeURL(path.Join("/ax", "project", projectName, "down")) }
+			x-target="project-status"
+			class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+		>Down</a>
+		<a
+			href={ templ.SafeURL(path.Join("/ax", "project", projectName, "edit")) }
+			x-target.push="page"
+			class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+		>Edit</a>
+	</div>
+	<div id="project-status" x-init={ fmt.Sprintf("$ajax('/ax/project/%s/status')", projectName) }></div>
+	<div id="project-envs" x-init={ fmt.Sprintf("$ajax('/ax/project/%s/envs')", projectName) }></div>
+}
+
+templ Project(layout bool, projectName string, err error) {
+	{{
+		breadcrumbs := []components.Breadcrumb{
+			{Text: "Home", Link: "/ax"},
+			{Text: projectName},
+		}
+	}}
+	if layout {
+		@layouts.AX(projectName, breadcrumbs...) {
+			<div id="page" x-sync class="container p-4">
+				@contentProject(projectName, err)
+			</div>
+		}
+		{{ return }}
+	}
+	@components.Breadcrumbs(breadcrumbs...)
+	<div id="page" x-sync class="container p-4">
+		@contentProject(projectName, err)
+	</div>
+}
+
+templ contentEditProject(projectName, project, format string, err error) {
+	<title>{ projectName }: Edit Raw - { format }</title>
+	<h1 class="text-3xl font-bold mb-4">Edit Project: { projectName }</h1>
+	<form x-target.push="page" method="POST" action={ templ.SafeURL(path.Join("/ax", "project", projectName, "edit")) }>
+		@components.Error(err, "edit-project-error")
+		<input
+			type="radio"
+			name="format"
+			value="yaml"
+			checked?={ format == "yaml" }
+			@change="$ajax(window.location.href, { query: { format: 'yaml' }, target: 'page' })"
+			class="rounded-full border-gray-300 focus:ring-2 focus:ring-blue-300"
+		/>YAML
+		<input
+			type="radio"
+			name="format"
+			value="json"
+			checked?={ format == "json" }
+			@change="$ajax(window.location.href, { query: { format: 'json' }, target: 'page' })"
+			class="rounded-full border-gray-300 focus:ring-2 focus:ring-blue-300"
+		/>JSON
+		<textarea id="project-raw" name="project" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline h-64">{ project }</textarea>
+		<br/>
+		<button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">Submit</button>
+	</form>
+}
+
+templ EditProject(layout bool, projectName, project string, format string, err error) {
+	{{ breadcrumbs := []components.Breadcrumb{{Text: "Home", Link: "/ax"}, {Text: projectName, Link: path.Join("/ax", "project", projectName)}, {Text: "Edit Raw"}} }}
+	if layout {
+		@layouts.AX(projectName, breadcrumbs...) {
+			<div id="page" x-sync class="container p-4">
+				@contentEditProject(projectName, project, format, err)
+			</div>
+		}
+		{{ return }}
+	}
+	@components.Breadcrumbs(breadcrumbs...)
+	<div id="page" x-sync class="container p-4">
+		@contentEditProject(projectName, project, format, err)
+	</div>
+}

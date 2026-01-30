@@ -1,0 +1,55 @@
+package components
+
+import "path"
+import "inovasiriset.co.id/docker/manager/app/lib/compose"
+
+templ Envs(projectName string, envVals []compose.EnvVal, err error) {
+	<div id="project-envs" class="p-4">
+		<h2 class="text-2xl font-bold mb-4">Envs</h2>
+		<table class="min-w-full divide-y divide-gray-200">
+			<thead>
+				<tr class="bg-gray-50">
+					<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+					<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+					<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">...</th>
+				</tr>
+			</thead>
+			<tbody>
+				for _, v := range envVals {
+					<tr class="hover:bg-gray-100">
+						<td class="px-6 py-2">{ v.Key }</td>
+						<td class="px-6 py-2">{ v.Val }</td>
+						<td class="px-6 py-2 whitespace-nowrap">
+							<a
+								href={ templ.SafeURL(path.Join("/ax", "project", projectName, "envs", "delete", v.Key)) }
+								x-target="project-envs"
+								@click="if(!confirm('delete ' + v.Key + ' env var?')) $event.preventDefault()"
+								class="text-red-500 hover:underline mr-2"
+							>delete</a>
+							<a
+								href={ templ.SafeURL(path.Join("/ax", "project", projectName, "envs", "secret", v.Key)) }
+								x-target="project-envs"
+								@click="if(!confirm('make ' + v.Key + ' env var secret?')) $event.preventDefault()"
+								class="text-blue-500 hover:underline"
+							>secret</a>
+						</td>
+					</tr>
+				}
+			</tbody>
+			<tfoot>
+				<tr id="add-env-plain" class="hover:bg-gray-100">
+					<td class="px-6 py-4 whitespace-nowrap"><input id="env-name" name="name" class="border rounded px-2 py-1 w-full"/></td>
+					<td class="px-6 py-4 whitespace-nowrap"><input id="env-value" name="value" class="border rounded px-2 py-1 w-full"/></td>
+					<td class="px-6 py-4 whitespace-nowrap">
+						<button
+							type="button"
+							x-target="project-envs"
+							@click="$ajax(path.Join('/ax', 'project', projectName, 'envs', 'plain'), { method: 'POST', body: new FormData($el.closest('tr')) })"
+							class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+						>+</button>
+					</td>
+				</tr>
+			</tfoot>
+		</table>
+	</div>
+}

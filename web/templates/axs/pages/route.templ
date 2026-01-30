@@ -1,0 +1,50 @@
+package pages
+
+import "inovasiriset.co.id/docker/manager/app/lib/compose"
+import "inovasiriset.co.id/docker/manager/web/templates/layouts"
+import "inovasiriset.co.id/docker/manager/web/templates/axs/components"
+import "path"
+import "encoding/json"
+import "fmt"
+
+templ contentRoute(projectName, serviceName string, route compose.ServiceRoute, err error) {
+	<title>Edit Route: { serviceName }</title>
+	<div id="page" x-sync class="container p-4">
+		<h1 class="text-3xl font-bold mb-4">Edit Project: { projectName }</h1>
+		<form x-target.push="page" method="POST" action={ templ.SafeURL(path.Join("/ax", "project", projectName, "route", serviceName)) }>
+			if err != nil {
+				<br/>
+				<span style="color: red;">{ err.Error() }</span>
+			}
+			<br/>
+			<label for="route-domain" class="block text-gray-700 mb-2 mr-4">Domain:</label>
+			<input id="route-domain" name="domain" type="text" value={ route.Domain } class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required/>
+			<label for="route-port" class="block text-gray-700 mb-2 mr-4">Port:</label>
+			<input id="route-port" name="port" type="number" min="0" value={ fmt.Sprintf("%d", route.Port) } class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"/>
+			<label for="route-sticky" class="block text-gray-700 mb-2 mr-4">Sticky:</label>
+			<textarea id="route-sticky" name="sticky" class="block shadow appearance-none border rounded w-fit resize py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline h-64">
+				if len(route.Sticky) == 0 {
+					{ "{}" }
+				} else {
+					{{ jsonSticky, _ := json.MarshalIndent(route.Sticky, "  ", "  ") }}
+					{ string(jsonSticky) }
+				}
+			</textarea>
+			<button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">Submit</button>
+		</form>
+	</div>
+}
+
+templ Route(layout bool, projectName, serviceName string, route compose.ServiceRoute, err error) {
+	{{ breadcrumbs := []components.Breadcrumb{{Text: "Home", Link: "/ax"}, {Text: projectName, Link: path.Join("/ax", "project", projectName)}, {Text: serviceName, Link: path.Join("/ax", "project", projectName, "service", serviceName, "edit")}, {Text: "Route"}} }}
+	if layout {
+		@layouts.AX(projectName, breadcrumbs...) {
+			<div id="page" x-init={ fmt.Sprintf("$ajax('/ax/project/%s/route/%s')", projectName, serviceName) } class="container p-4"></div>
+		}
+		{{ return }}
+	}
+	@components.Breadcrumbs(breadcrumbs...)
+	<div id="page" x-sync class="container p-4">
+		@contentRoute(projectName, serviceName, route, err)
+	</div>
+}

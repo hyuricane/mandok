@@ -1,0 +1,47 @@
+package pages
+
+import "inovasiriset.co.id/docker/manager/web/templates/layouts"
+import "path"
+import "inovasiriset.co.id/docker/manager/web/templates/axs/components"
+
+templ contentDashboard(projects []string, err error) {
+	<title>Mandok Projects</title>
+	<div id="page" class="container p-4">
+		<h1 class="text-3xl font-bold mb-4">Projects</h1>
+		@components.Error(err, "dashboard-err")
+		<ul class="list-disc pl-6 mb-4">
+			for _, p := range projects {
+				<li>
+					<a
+						href={ templ.SafeURL(path.Join("/ax", "project", p)) }
+						x-target.push="page"
+						class="text-blue-500 hover:underline"
+					>{ p }</a>
+				</li>
+			}
+		</ul>
+		<a
+			href="/ax/project-new"
+			x-target.push="page"
+			class="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+		>
+			New Project
+		</a>
+	</div>
+}
+
+templ Dashboard(layout bool, projects []string, err error) {
+	{{ breadcrumbs := []components.Breadcrumb{{Text: "Home", Link: "/ax"}, {Text: "Dashboard"}} }}
+	if layout {
+		@layouts.AX("Mandok Projects", breadcrumbs...) {
+			<div id="page" x-sync class="container p-4">
+				@contentDashboard(projects, err)
+			</div>
+		}
+		{{ return }}
+	}
+	@components.Breadcrumbs(breadcrumbs...)
+	<div id="page" x-sync class="container p-4">
+		@contentDashboard(projects, err)
+	</div>
+}

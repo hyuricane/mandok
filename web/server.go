@@ -7,6 +7,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	apiHandlers "inovasiriset.co.id/docker/manager/web/handlers/api/v1"
+	"inovasiriset.co.id/docker/manager/web/handlers/ax"
 	"inovasiriset.co.id/docker/manager/web/handlers/dashboard"
 	"inovasiriset.co.id/docker/manager/web/handlers/hx"
 	"inovasiriset.co.id/docker/manager/web/middlewares"
@@ -34,7 +35,7 @@ func ListenHttp(statics map[string][]fs.FS) error {
 		if c.Response().Committed {
 			return
 		}
-		c.Logger().Error(err)
+		c.Logger().Error(err, c.Path())
 		c.Echo().DefaultHTTPErrorHandler(err, c)
 	}
 	for prefix, fsys := range statics {
@@ -52,6 +53,7 @@ func ListenHttp(statics map[string][]fs.FS) error {
 	}
 	dashboard.RouteDashboard(app.Group(""))
 	hx.RouteDashboard(app.Group("/hx"))
+	ax.RouteDashboard(app.Group("/ax"))
 
 	apiHandlers.RouteDocker(app.Group("/api/docker", middlewares.MiddlewareAuth()))
 	apiHandlers.RouteCompose(app.Group("/api/compose", middlewares.MiddlewareAuth()))

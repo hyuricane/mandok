@@ -1,0 +1,107 @@
+package components
+
+import (
+	"fmt"
+	"inovasiriset.co.id/docker/manager/app/lib/compose"
+	"path"
+)
+
+templ Statuses(projectName string, projectStats map[string]compose.ServiceStatus, err error) {
+	<div id="project-status" class="container p-4">
+		<h2 class="text-2xl font-bold mb-4">Statuses</h2>
+		<table class="w-4/5 divide-y divide-gray-200">
+			<thead class="bg-gray-50">
+				<tr>
+					<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
+					<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
+					<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Running</th>
+					<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">State</th>
+					<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Route</th>
+					<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+				</tr>
+			</thead>
+			<tbody class="bg-white divide-y divide-gray-200">
+				for n, v := range projectStats {
+					<tr id={ fmt.Sprintf("project-status-%s", n) } class="hover:bg-gray-100">
+						<td class="px-6 py-2 whitespace-nowrap">{ n }</td>
+						<td class="px-6 py-2">{ v.Image }</td>
+						<td class="px-6 py-2 whitespace-nowrap">{ fmt.Sprintf("%d/%d", v.Running, v.Expected) }</td>
+						<td class="px-6 py-2 whitespace-nowrap">{ v.State }</td>
+						<td class="px-6 py-2 whitespace-nowrap">
+							if v.Route != "" {
+								<a href={ templ.SafeURL("//" + v.Route) } target="_blank" class="text-blue-500 hover:underline">{ v.Route }</a> | 
+								<a
+									href={ templ.SafeURL(path.Join("/ax", "project", projectName, "route", n)) }
+									x-target.push="page"
+									class="text-blue-500 hover:underline mr-2"
+								>Edit</a>
+							} else {
+								<a
+									href={ templ.SafeURL(path.Join("/ax", "project", projectName, "route", n)) }
+									x-target.push="page"
+									class="text-blue-500 hover:underline mr-2"
+								>Add Route</a>
+							}
+						</td>
+						<td class="px-6 py-2 whitespace-nowrap">
+							<a
+								href={ templ.SafeURL(path.Join("/ax", "project", projectName, "service", n, "edit")) }
+								x-target.push="page"
+								class="text-blue-500 hover:underline mr-2"
+							>Edit</a>
+							if v.State == "running" {
+								| <a
+	href={ templ.SafeURL(path.Join("/ax", "project", projectName, "service", n, "stop")) }
+	x-target="project-status"
+	class="text-blue-500 hover:underline mr-2"
+>Stop</a>
+								| <a
+	href={ templ.SafeURL(path.Join("/ax", "project", projectName, "service", n, "start") + "?pull=true") }
+	x-target="project-status"
+	class="text-blue-500 hover:underline mr-2"
+>pull</a>
+								| <a
+	href={ templ.SafeURL(path.Join("/ax", "project", projectName, "service", n, "start") + "?restart=true") }
+	x-target="project-status"
+	class="text-blue-500 hover:underline mr-2"
+>restart</a>
+								| <a
+	href={ templ.SafeURL(path.Join("/ax", "project", projectName, "service", n, "start")) }
+	x-target="project-status"
+	class="text-blue-500 hover:underline mr-2"
+>soft start</a>
+							} else {
+								| <a
+	href={ templ.SafeURL(path.Join("/ax", "project", projectName, "service", n, "start")) }
+	x-target="project-status"
+	class="text-blue-500 hover:underline mr-2"
+>Start</a>
+							}
+							if v.State != "" {
+								| <a href={ templ.SafeURL(path.Join("/ax", "project", projectName, "service", n, "log")) } target="_blank" class="text-blue-500 hover:underline">log</a>
+							}
+						</td>
+					</tr>
+				}
+				if err != nil {
+					<tr>
+						<td colspan="6" class="px-6 py-2 whitespace-nowrap">
+							@Error(err, "status-err")
+						</td>
+					</tr>
+				}
+			</tbody>
+			<tfoot>
+				<tr>
+					<td colspan="6" class="px-6 py-4 whitespace-nowrap">
+						<a
+							href={ templ.SafeURL(path.Join("/ax", "project", projectName, "service-new")) }
+							x-target.push="page"
+							class="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+						>New Service</a>
+					</td>
+				</tr>
+			</tfoot>
+		</table>
+	</div>
+}

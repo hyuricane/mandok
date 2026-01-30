@@ -1,0 +1,92 @@
+package pages
+
+import (
+	"inovasiriset.co.id/docker/manager/web/templates/axs/components"
+	"inovasiriset.co.id/docker/manager/web/templates/layouts"
+	"path"
+)
+
+func serviceTitle(projectName, serviceName string) string {
+	if serviceName != "" {
+		return projectName + " - " + serviceName
+	} else {
+		return projectName + " - New Service"
+	}
+}
+
+templ contentService(projectName, serviceName string, service string, format string, err error) {
+	if service != "" {
+		<h1 class="text-3xl font-bold mb-4">Edit Service: { serviceName }</h1>
+	} else {
+		<h1 class="text-3xl font-bold mb-4">New Service</h1>
+	}
+	{{ 
+		if format == "" {
+			format = "json"
+		}
+	}}
+	<form x-target.push="page" method="POST" action={ templ.SafeURL(path.Join("/ax", "project", projectName, "service", serviceName)) }>
+		if serviceName == "" {
+			<label for="service-name" class="block text-gray-700 text-sm font-bold mb-2">Name: </label>
+			<input id="service-name" name="name" type="text" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required/>
+		}
+		if err != nil {
+			<span style="color: red;">{ err.Error() }</span>
+			<br/>
+		}
+		<input
+			type="radio"
+			name="format"
+			value="yaml"
+			checked?={ format == "yaml" }
+			@change="$ajax(window.location.href, { query: { format: 'yaml' }, target: 'page' })"
+			class="rounded-full border-gray-300 focus:ring-2 focus:ring-blue-300"
+		/>YAML
+		<input
+			type="radio"
+			name="format"
+			value="json"
+			checked?={ format == "json" }
+			@change="$ajax(window.location.href, { query: { format: 'json' }, target: 'page' })"
+			class="rounded-full border-gray-300 focus:ring-2 focus:ring-blue-300"
+		/>JSON
+		<textarea id="service-detail" name={ format } class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline h-64">
+			if service != "" {
+				{ service }
+			} else if format == "json" {
+				{ "{}" }
+			}
+		</textarea>
+		<br/>
+		<button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">Submit</button>
+	</form>
+}
+
+templ Service(layout bool, projectName string, serviceName string, service string, format string, err error) {
+	{{
+		var breadcrumbs []components.Breadcrumb
+		breadcrumbs = append(breadcrumbs, components.Breadcrumb{Text: "Home", Link: "/ax"})
+		breadcrumbs = append(breadcrumbs, components.Breadcrumb{Text: projectName, Link: path.Join("/ax", "project", projectName)})
+		var title string
+		if serviceName != "" {
+			breadcrumbs = append(breadcrumbs, components.Breadcrumb{Text: serviceName, Link: path.Join("/ax", "project", projectName, "service", serviceName, "edit")})
+			breadcrumbs = append(breadcrumbs, components.Breadcrumb{Text: "Route"})
+			title = projectName + " - " + serviceName
+		} else {
+			breadcrumbs = append(breadcrumbs, components.Breadcrumb{Text: "New Service"})
+			title = projectName + " - New Service"
+		}
+	}}
+	if layout {
+		@layouts.AX(title, breadcrumbs...) {
+			<div id="page" x-sync class="container p-4">
+				@contentService(projectName, serviceName, service, format, err)
+			</div>
+		}
+		{{ return }}
+	}
+	@components.Breadcrumbs(breadcrumbs...)
+	<div id="page" x-sync class="container p-4">
+		@contentService(projectName, serviceName, service, format, err)
+	</div>
+}

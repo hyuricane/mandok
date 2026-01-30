@@ -1,0 +1,7 @@
+package components
+
+templ Error(err error, id string) {
+	if err != nil {
+		<span id={ id } class="text-red-500 text-sm block">{ err.Error() }</span>
+	}
+}
