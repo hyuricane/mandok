@@ -1,2 +1,5 @@
 .env
 /dist
+/static
+!/static/index.html
+/web/templates/**/*_templ.go

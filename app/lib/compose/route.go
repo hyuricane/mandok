@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"strconv"
 	"strings"
 )
@@ -134,7 +135,11 @@ func RouteService(projectDir string, serviceName string, route ServiceRoute) err
 		"external": true,
 	}
 
-	_, err = CreateProject(project.Name, *project)
+	projectName := path.Base(projectDir)
+	if projectName == "" {
+		projectName = project.Name
+	}
+	_, err = CreateProject(projectName, *project)
 	if err != nil {
 		return err
 	}
@@ -185,7 +190,11 @@ func DeleteRoute(projectDir string, serviceName string) error {
 
 	project.Services[serviceName] = service
 
-	_, err = CreateProject(project.Name, *project)
+	projectName := path.Base(projectDir)
+	if projectName == "" {
+		projectName = project.Name
+	}
+	_, err = CreateProject(projectName, *project)
 	if err != nil {
 		return err
 	}

@@ -1,19 +1,71 @@
-FROM golang:1.24 as compiler
+# syntax=docker/dockerfile:1
 
-WORKDIR /usr/src/app
+# ── Stage 1: Build frontend assets ───────────────────────────────────────
+FROM node:22-alpine AS assets
+
+WORKDIR /app
+
+
+# Copy only dependency files first → best layer caching
+COPY nodejs/package*.json ./nodejs/
+
+RUN cd nodejs \
+  --mount=type=cache,target=/root/.npm && \
+  npm ci --prefer-offline --no-audit --no-fund
+
+#  copy the rest of nodejs dir files
+COPY ./nodejs/*.js /app/nodejs/
+COPY ./nodejs/src /app/nodejs/src
+COPY ./static /app/static
+COPY ./web /app/web
+
+# Assuming your build script outputs to ./dist or similar
+RUN cd nodejs && npm run build:webpack
+
+
+# ── Stage 2: Build Go binary ─────────────────────────────────────────────
+FROM golang:1.24-alpine AS builder
+
+WORKDIR /app
+
+# Cache Go modules
 COPY go.mod go.sum ./
 RUN go mod download
-COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o mandok main.go
-# Use a minimal image for the final build
-# to reduce size and attack surface
-# Use the Docker CLI image to run the binary
 
+COPY app/    ./app/
+COPY types/  ./types/
+COPY web/    ./web/
+COPY main.go ./
+
+# Copy already-built static assets
+COPY --from=assets /app/static/ ./static/
+
+RUN mkdir -p ./dist
+
+RUN go tool templ generate
+
+# Prefer static build if possible
+RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o ./dist/mandok ./main.go
+
+
+# ── Stage 3: Minimal runtime ─────────────────────────────────────────────
+# Use the Docker CLI image to run the docker commands
 FROM docker:cli
 
-WORKDIR /usr/src/app
+# If using scratch + your app makes HTTPS calls → need certificates
+# COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+
+WORKDIR /app
+
+COPY --from=builder /app/dist/mandok  ./mandok
+# COPY --from=builder /app/static       ./static
+
+# Optional: non-root user (scratch supports numeric uids)
+# USER 10001:10001
+
 ENV PORT=80
-COPY --from=compiler /usr/src/app/mandok ./mandok
-COPY --from=compiler /usr/src/app/static ./static
-VOLUME /usr/src/app/projects
+EXPOSE 80
+
+VOLUME /app/projects
+
 CMD ["./mandok"]

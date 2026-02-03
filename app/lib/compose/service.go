@@ -36,9 +36,9 @@ func CreateService(projectDir string, serviceName string, service map[string]int
 		return err
 	}
 	project.Services[serviceName] = service
-	projectName := project.Name
+	projectName := path.Base(projectDir)
 	if projectName == "" {
-		projectName = path.Base(projectDir)
+		projectName = project.Name
 	}
 	_, err = CreateProject(projectName, *project)
 	if err != nil {
