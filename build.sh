@@ -25,4 +25,4 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-CGO_ENABLED=0 go build -o ./dist/mandok main.go
+CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o ./dist/mandok main.go
