@@ -11,7 +11,8 @@ templ AX(title string, breadcrumbs ...components.Breadcrumb) {
 			<title>{ title }</title>
 			<script defer src="https://cdn.jsdelivr.net/npm/@imacrayon/alpine-ajax@0.12.4/dist/cdn.min.js"></script>
 			<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-			<link href="/static/main.css" rel="stylesheet"/>
+			<script src="/static/bundle.js"></script>
+			<link href="/static/bundle.css" rel="stylesheet"/>
 		</head>
 		<!-- on response header X-Alpine-Redirect, hard redirect to X-Alpine-Redirect value -->
 		<body x-data="{ loading: false }" x-on:ajax:start="loading = true" x-on:ajax:complete="loading = false">
