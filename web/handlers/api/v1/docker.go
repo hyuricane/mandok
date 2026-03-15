@@ -394,7 +394,9 @@ func restartContainer(workdir string, containerName string, configFiles ...strin
 
 	// Pull the latest image first
 	pullArgs := append(args, "pull", containerName)
-	pullCmd := exec.Command(cmdName, pullArgs...)
+	// split cmdName
+	cmdNameSplit := strings.Split(cmdName, " ")
+	pullCmd := exec.Command(cmdNameSplit[0], append(cmdNameSplit[1:], pullArgs...)...)
 	pullCmd.Dir = workdir
 	pullCmd.Env = cleanEnv
 	pullOut, pullErr := pullCmd.CombinedOutput()
@@ -407,7 +409,7 @@ func restartContainer(workdir string, containerName string, configFiles ...strin
 
 	// Restart the container using up with force-recreate
 	upArgs := append(args, "up", "-d", "--force-recreate", containerName)
-	upCmd := exec.Command(cmdName, upArgs...)
+	upCmd := exec.Command(cmdNameSplit[0], append(cmdNameSplit[1:], upArgs...)...)
 	upCmd.Dir = workdir
 	upCmd.Env = cleanEnv
 	upOut, upErr := upCmd.CombinedOutput()

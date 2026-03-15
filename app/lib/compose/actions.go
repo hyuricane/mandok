@@ -1,56 +1,76 @@
 package compose
 
 import (
-	"bytes"
-	"os/exec"
+	"context"
+
+	"github.com/docker/compose/v2/pkg/api"
 )
 
-func StartProject(projectDir string, restart bool, pull bool, services ...string) error {
-	args := []string{"up", "-d"}
-	if restart {
-		args = append(args, "--force-recreate")
-	}
-	if pull {
-		args = append(args, "--pull", "always", "--build")
-	}
-	args = append(args, services...)
-	cmd := exec.Command("docker", append([]string{"compose"}, args...)...)
-	cmd.Dir = projectDir
-	_, err := doExec(cmd)
+func StartProject(projectDir string, forceRecreate bool, pull bool, services ...string) error {
+	ctx := context.Background()
+	project, err := LoadProject(ctx, projectDir)
 	if err != nil {
 		return err
 	}
+
+	// forceRecreate: if true, recreate containers even if the image is the same
+	recreatePolicy := api.RecreateDiverged
+	if forceRecreate {
+		recreatePolicy = api.RecreateForce
+	}
+
+	// getAPI() return github.com/docker/compose/v2/pkg/api Compose
+	apiClient := getAPI()
+	err = apiClient.Up(ctx, project.Project, api.UpOptions{
+		Create: api.CreateOptions{
+			Build: &api.BuildOptions{
+				Pull: pull,
+			},
+			Recreate: recreatePolicy,
+		},
+		Start: api.StartOptions{
+			Services: services,
+			Project:  project.Project,
+			Wait:     true,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	// log.Printf("[DEBUG] project model %v", )
 
 	return nil
 }
 
 func StopProject(projectDir string, service ...string) error {
-	args := []string{"stop"}
-	args = append(args, service...)
-	cmd := exec.Command("docker", append([]string{"compose"}, args...)...)
-	cmd.Dir = projectDir
-
-	_, err := doExec(cmd)
-
+	ctx := context.Background()
+	project, err := LoadProject(ctx, projectDir)
 	if err != nil {
-		if cErr := NewComposeError(bytes.NewBufferString(err.Error())); cErr != nil {
-			return cErr
-		}
-
+		return err
+	}
+	apiClient := getAPI()
+	err = apiClient.Stop(ctx, project.Name, api.StopOptions{
+		Project:  project.Project,
+		Services: service,
+	})
+	if err != nil {
 		return err
 	}
 	return nil
 }
 
 func DownProject(projectDir string) error {
-	cmd := exec.Command("docker", "compose", "down")
-	cmd.Dir = projectDir
-	_, err := doExec(cmd)
-
+	ctx := context.Background()
+	project, err := LoadProject(ctx, projectDir)
 	if err != nil {
-		if cErr := NewComposeError(bytes.NewBufferString(err.Error())); cErr != nil {
-			return cErr
-		}
+		return err
+	}
+	apiClient := getAPI()
+	err = apiClient.Down(ctx, project.Name, api.DownOptions{
+		Project: project.Project,
+	})
+	if err != nil {
 		return err
 	}
 	return nil

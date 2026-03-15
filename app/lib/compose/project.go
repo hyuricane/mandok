@@ -11,10 +11,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/joho/godotenv"
 	"gopkg.in/yaml.v3"
 )
 
 func init() {
+	godotenv.Load()
 	if err := login(); err != nil {
 		panic(err)
 	}

@@ -1,33 +1,31 @@
 package compose
 
 import (
-	"encoding/json"
-	"os/exec"
+	"context"
+	"fmt"
 	"path"
-	"strings"
 )
 
 func GetService(projectDir string, service string, nointerpolate ...bool) (map[string]interface{}, error) {
-	// go to project directory and trigger docker compose up
-	args := []string{"--env-file", "masked.env", "config", "--format", "json", "--no-path-resolution", service}
-	if len(nointerpolate) > 0 && nointerpolate[0] {
-		args = []string{"config", "--format", "json", "--no-path-resolution", "--no-interpolate", service}
-	}
-	cmd := exec.Command("docker-compose", args...)
-	cmd.Dir = projectDir
-	out, err := doExec(cmd)
-	if err != nil {
-		if strings.HasPrefix(err.Error(), "no such service") {
-			return nil, nil
-		}
-		return nil, err
-	}
-	prj := ComposeProjectYaml{}
-	err = json.NewDecoder(out).Decode(&prj)
+	ctx := context.Background()
+	project, err := LoadProject(ctx, projectDir)
 	if err != nil {
 		return nil, err
 	}
-	return prj.Services[service], nil
+
+	configModel, err := project.ConfigModel(ctx)
+	if err != nil {
+		return nil, err
+	}
+	servicesConfigModel, ok := configModel["services"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("no services found in project")
+	}
+	serviceModel, ok := servicesConfigModel[service].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("no service %s found in project", service)
+	}
+	return serviceModel, nil
 }
 
 func CreateService(projectDir string, serviceName string, service map[string]interface{}) error {

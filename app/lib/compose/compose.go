@@ -1,18 +1,67 @@
 package compose
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
 	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/compose-spec/compose-go/v2/cli"
+	types "github.com/compose-spec/compose-go/v2/types"
+	"github.com/docker/cli/cli/command"
+	"github.com/docker/cli/cli/flags"
+	"github.com/docker/compose/v2/pkg/api"
+	"github.com/docker/compose/v2/pkg/compose"
+	"github.com/docker/docker/api/types/registry"
+	dockerclient "github.com/docker/docker/client"
+	"github.com/joho/godotenv"
+	"go.yaml.in/yaml/v3"
 )
 
 var PROJECT_DIRS = "projects"
+var _composeApi *api.Compose
+var _dockerClient *dockerclient.Client
+
+const COMPOSE_VERSION = "2.40.3"
 
 func init() {
+	// load env
+	godotenv.Load()
 	if os.Getenv("PROJECT_DIRS") != "" {
 		PROJECT_DIRS = os.Getenv("PROJECT_DIRS")
 	}
 	if os.Getenv("NETWORK") != "" {
 		NETWORK = os.Getenv("NETWORK")
 	}
+	var err error
+	_dockerClient, err = dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
+	if err != nil {
+		panic(err)
+	}
+
+	cli, err := command.NewDockerCli(command.WithAPIClient(_dockerClient))
+	if err != nil {
+		panic(err)
+	}
+	err = cli.Initialize(flags.NewClientOptions())
+	if err != nil {
+		panic(err)
+	}
+	go func() {
+		for _, auth := range registryAuthsFromEnv() {
+			log.Printf("[INFO] registry %s login", auth.ServerAddress)
+			if ok, err := _dockerClient.RegistryLogin(context.Background(), auth); err != nil {
+				log.Printf("[ERROR] registry %s login %v", auth.ServerAddress, err)
+			} else {
+				log.Printf("[INFO] registry %s login %v", auth.ServerAddress, ok)
+			}
+		}
+	}()
+	composeApi := compose.NewComposeService(cli)
+	_composeApi = &composeApi
 }
 
 func mergeMap(a, b map[string]interface{}) map[string]interface{} {
@@ -32,4 +81,153 @@ func mergeMap(a, b map[string]interface{}) map[string]interface{} {
 		out[k] = v
 	}
 	return out
+}
+
+func getAPI() api.Compose {
+	return *_composeApi
+}
+
+func registryAuthsFromEnv() []registry.AuthConfig {
+	// username:password@registryhost,...
+	registryAuth := os.Getenv("REGISTRY_AUTHS")
+	registryAuths := strings.Split(registryAuth, ",")
+	auths := []registry.AuthConfig{}
+	for _, registryAuth := range registryAuths {
+		registryAuth := strings.Split(registryAuth, "@")
+		if len(registryAuth) != 2 {
+			continue
+		}
+		auth := strings.Split(registryAuth[0], ":")
+		if len(auth) != 2 {
+			continue
+		}
+		auths = append(auths, registry.AuthConfig{
+			Username:      auth[0],
+			Password:      auth[1],
+			ServerAddress: registryAuth[1],
+		})
+	}
+	return auths
+}
+
+type Project struct {
+	*types.Project
+	option *cli.ProjectOptions
+	model  map[string]interface{}
+}
+
+func (p *Project) ConfigModel(ctx context.Context) (map[string]interface{}, error) {
+	if p.model != nil {
+		return p.model, nil
+	}
+	models, err := p.option.LoadModel(ctx)
+	if err != nil {
+		return nil, err
+	}
+	p.model = models
+	return models, nil
+}
+
+func (p *Project) ConfigModelYaml() ([]byte, error) {
+	if p.model == nil {
+		_, err := p.ConfigModel(context.Background())
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return yaml.Marshal(p.model)
+}
+
+func (p *Project) ConfigModelJson() ([]byte, error) {
+	if p.model == nil {
+		_, err := p.ConfigModel(context.Background())
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return json.Marshal(p.model)
+}
+
+func LoadProject(ctx context.Context, projectDir string) (*Project, error) {
+	projectDirAbs, err := filepath.Abs(projectDir)
+	if err != nil {
+		return nil, err
+	}
+	candidates := []string{"compose.yaml", "docker-compose.yml", "compose.yml"}
+	var cfgFile string
+	for _, name := range candidates {
+		p := filepath.Join(projectDirAbs, name)
+		if _, err := os.Stat(p); err == nil {
+			cfgFile = p
+			break
+		}
+	}
+	if cfgFile == "" {
+		return nil, fmt.Errorf("no compose file found in %s", projectDirAbs)
+	}
+	options, err := cli.NewProjectOptions(
+		[]string{cfgFile},
+		cli.WithWorkingDirectory(projectDirAbs),
+		cli.WithResolvedPaths(true),
+		// cli.WithOsEnv,
+		cli.WithDotEnv,
+		cli.WithConfigFileEnv,
+		cli.WithDefaultConfigPath,
+		cli.WithEnvFiles(".env"),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	project, err := options.LoadProject(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// apply missing docker compose labels to each services
+	for _, service := range project.Services {
+		if service.Labels == nil {
+			service.Labels = make(map[string]string)
+		}
+		if service.Labels["com.docker.compose.project"] == "" {
+			if service.CustomLabels == nil {
+				service.CustomLabels = make(map[string]string)
+			}
+			service.CustomLabels[api.OneoffLabel] = "False"
+			service.CustomLabels[api.ProjectLabel] = project.Name
+			service.CustomLabels[api.ConfigFilesLabel] = cfgFile
+			service.CustomLabels[api.WorkingDirLabel] = projectDirAbs
+			service.CustomLabels[api.ServiceLabel] = service.Name
+			service.CustomLabels[api.VersionLabel] = COMPOSE_VERSION
+			project.Services[service.Name] = service
+		}
+	}
+	return &Project{
+		Project: project,
+		option:  options,
+	}, nil
+}
+
+func sanitizeProjectName(s string) string {
+	s = strings.ToLower(s)
+	s = strings.ReplaceAll(s, "_", "-")
+	s = strings.Trim(s, "-_")
+	if s == "" {
+		s = "project"
+	}
+	// Optional: ensure starts with letter
+	if len(s) > 0 && !isLetter(rune(s[0])) {
+		s = "p-" + s
+	}
+	// Max length ~50–100 chars depending on backend
+	if len(s) > 68 {
+		s = s[:68]
+	}
+	return s
+}
+
+func isLetter(r rune) bool {
+	return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z')
 }

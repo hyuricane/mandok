@@ -2,6 +2,7 @@ package web
 
 import (
 	"io/fs"
+	"log"
 	"os"
 
 	"github.com/labstack/echo/v4"
@@ -67,6 +68,6 @@ func ListenHttp(statics map[string][]fs.FS) error {
 	if ip == "" {
 		ip = "0.0.0.0"
 	}
-
+	log.Println("Starting server on ", ip+":"+port)
 	return app.Start(ip + ":" + port)
 }

@@ -9,6 +9,8 @@ import (
 	"path"
 	"strconv"
 	"strings"
+
+	"github.com/joho/godotenv"
 )
 
 type ServiceRoute struct {
@@ -25,6 +27,8 @@ var TRAEFIK_HTTP_ENTRYPOINT = "web"
 var TRAEFIK_HTTPS_ENTRYPOINT = "websecure"
 
 func init() {
+	// load env
+	godotenv.Load()
 	if os.Getenv("NETWORK") != "" {
 		NETWORK = os.Getenv("NETWORK")
 	}

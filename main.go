@@ -13,8 +13,13 @@ import (
 //go:embed static/*
 var staticFs embed.FS
 
+func init() {
+	if err := godotenv.Load(); err == nil {
+		log.Printf("[INFO] .env file loaded")
+	}
+}
+
 func main() {
-	godotenv.Load()
 	staticSubFs, err := fs.Sub(staticFs, "static")
 	if err != nil {
 		log.Fatalf("[ERROR] failed to load static files: %v", err)
