@@ -71,7 +71,6 @@ func project(c echo.Context) error {
 	name := c.Param("project")
 	projectDir := compose.HasProject(name)
 	if projectDir == "" {
-		axRedirect(c, "/ax")
 		return c.Redirect(302, "/ax/")
 	}
 	log.Printf("[DEBUG] project %v", name)
@@ -93,7 +92,6 @@ func doNewProject(c echo.Context) error {
 		return axPages.NewProject(renderLayout, err).Render(c.Request().Context(), c.Response().Writer)
 	}
 	log.Printf("[DEBUG] new Project: %s", projectDir)
-	axRedirect(c, "/ax/project/"+projectName)
 	return c.Redirect(302, "/ax/project/"+projectName)
 }
 
@@ -137,7 +135,6 @@ func doEditProject(c echo.Context) error {
 	projectName := c.Param("project")
 	projectDir := compose.HasProject(projectName)
 	if projectDir == "" {
-		axRedirect(c, "/ax")
 		return c.Redirect(302, "/ax")
 	}
 	format := c.FormValue("format")
@@ -162,7 +159,6 @@ func doEditProject(c echo.Context) error {
 	if err != nil {
 		return axPages.EditProject(renderLayout, projectName, string(payload), format, err).Render(c.Request().Context(), c.Response().Writer)
 	}
-	axRedirect(c, "/ax/project/"+projectName)
 	return c.Redirect(302, "/ax/project/"+projectName)
 }
 
@@ -170,12 +166,10 @@ func startProject(c echo.Context) error {
 	projectName := c.Param("project")
 	projectDir := compose.HasProject(projectName)
 	if projectDir == "" {
-		axRedirect(c, "/ax/project/"+projectName)
 		return c.Redirect(302, "/ax/project/"+projectName)
 	}
 	err := compose.StartProject(projectDir, false, false)
 	if err != nil {
-		axRedirect(c, "/ax/project/"+projectName)
 		return c.Redirect(302, "/ax/project/"+projectName)
 	}
 	return status(c)
@@ -185,49 +179,63 @@ func downProject(c echo.Context) error {
 	projectName := c.Param("project")
 	projectDir := compose.HasProject(projectName)
 	if projectDir == "" {
-		axRedirect(c, "/ax/project/"+projectName)
-		return c.Redirect(302, "/ax/project/"+projectName)
+		return c.Redirect(302, "/ax/project/")
 	}
 	err := compose.DownProject(projectDir)
 	if err != nil {
-		axRedirect(c, "/ax/project/"+projectName)
-		return c.Redirect(302, "/ax/project/"+projectName)
+		return c.Redirect(302, "/ax/project/"+projectName+"/status")
 	}
-	return nil
+	return c.Redirect(302, "/ax/project/"+projectName+"/status")
 }
 
 func startService(c echo.Context) error {
+	isAlpine := c.Request().Header.Get("X-Alpine-Request") == "true"
 	projectName := c.Param("project")
 	serviceName := c.Param("service")
 	projectDir := compose.HasProject(projectName)
 	isRestart := c.QueryParam("restart") == "true"
 	isPull := c.QueryParam("pull") == "true"
 	if projectDir == "" {
-		axRedirect(c, "/ax/project/"+projectName)
+		if isAlpine {
+			return c.Redirect(302, "/ax/project/"+projectName)
+		}
 		return c.Redirect(302, "/ax/project/"+projectName)
 	}
 	err := compose.StartProject(projectDir, isRestart, isPull, serviceName)
 	if err != nil {
-		axRedirect(c, "/ax/project/"+projectName)
+		if isAlpine {
+			return c.Redirect(302, "/ax/project/"+projectName+"/status")
+		}
 		return c.Redirect(302, "/ax/project/"+projectName)
 	}
-	return nil
+	if isAlpine {
+		return c.Redirect(302, "/ax/project/"+projectName+"/status")
+	}
+	return c.Redirect(302, "/ax/project/"+projectName)
 }
 
 func stopService(c echo.Context) error {
+	isAlpine := c.Request().Header.Get("X-Alpine-Request") == "true"
 	projectName := c.Param("project")
 	serviceName := c.Param("service")
 	projectDir := compose.HasProject(projectName)
 	if projectDir == "" {
-		axRedirect(c, "/ax/project/"+projectName)
+		if isAlpine {
+			return c.Redirect(302, "/ax/project/"+projectName+"/status")
+		}
 		return c.Redirect(302, "/ax/project/"+projectName)
 	}
 	err := compose.StopProject(projectDir, serviceName)
 	if err != nil {
-		axRedirect(c, "/ax/project/"+projectName)
+		if isAlpine {
+			return c.Redirect(302, "/ax/project/"+projectName+"/status")
+		}
 		return c.Redirect(302, "/ax/project/"+projectName)
 	}
-	return nil
+	if isAlpine {
+		return c.Redirect(302, "/ax/project/"+projectName+"/status")
+	}
+	return c.Redirect(302, "/ax/project/"+projectName)
 }
 
 func editService(c echo.Context) error {
@@ -240,7 +248,6 @@ func editService(c echo.Context) error {
 	}
 	projectDir := compose.HasProject(projectName)
 	if projectDir == "" {
-		axRedirect(c, "/ax")
 		return c.Redirect(302, "/ax")
 	}
 	service, err := compose.GetService(projectDir, serviceName, true)
@@ -254,7 +261,6 @@ func editService(c echo.Context) error {
 	case "yaml":
 		payload, err = yaml.Marshal(service)
 	default:
-		axRedirect(c, c.Path())
 		return c.Redirect(302, c.Path())
 	}
 	return axPages.Service(renderLayout, projectName, serviceName, string(payload), format, err).Render(c.Request().Context(), c.Response().Writer)
@@ -269,7 +275,6 @@ func addService(c echo.Context) error {
 	}
 	projectDir := compose.HasProject(projectName)
 	if projectDir == "" {
-		axRedirect(c, "/ax")
 		return c.Redirect(302, "/ax")
 	}
 	return axPages.Service(renderLayout, projectName, "", "", format, nil).Render(c.Request().Context(), c.Response().Writer)
@@ -289,7 +294,6 @@ func doEditService(c echo.Context) error {
 	payload := c.FormValue(format)
 	projectDir := compose.HasProject(projectName)
 	if projectDir == "" {
-		axRedirect(c, "/ax")
 		return c.Redirect(302, "/ax")
 	}
 	service := map[string]interface{}{}
@@ -300,7 +304,6 @@ func doEditService(c echo.Context) error {
 	case "yaml":
 		err = yaml.NewDecoder(bytes.NewBufferString(payload)).Decode(&service)
 	default:
-		axRedirect(c, c.Path())
 		return c.Redirect(302, c.Path())
 	}
 	if err != nil {
@@ -310,7 +313,6 @@ func doEditService(c echo.Context) error {
 	if err != nil {
 		return axPages.Service(renderLayout, projectName, serviceName, string(payload), format, err).Render(c.Request().Context(), c.Response().Writer)
 	}
-	axRedirect(c, "/ax/project/"+projectName)
 	return c.Redirect(302, "/ax/project/"+projectName)
 }
 
@@ -320,7 +322,6 @@ func editRoute(c echo.Context) error {
 	serviceName := c.Param("service")
 	projectDir := compose.HasProject(projectName)
 	if projectDir == "" {
-		axRedirect(c, "/ax")
 		return c.Redirect(302, "/ax")
 	}
 	routes, err := compose.GetRoutes(projectDir, serviceName)
@@ -402,7 +403,6 @@ func logout(c echo.Context) error {
 		MaxAge: -1,
 	})
 
-	axRedirect(c, "/ax")
 	return c.Redirect(302, "/ax")
 }
 
@@ -429,10 +429,5 @@ func doLogin(c echo.Context) error {
 		Value: token64.String(),
 		Path:  "/",
 	})
-	axRedirect(c, "/ax")
 	return c.Redirect(302, "/ax")
-}
-
-func axRedirect(c echo.Context, url string) {
-	c.Response().Header().Add("X-Alpine-Redirect", url)
 }
