@@ -47,7 +47,7 @@ templ contentService(projectName, serviceName string, service string, format str
 	<form
 		x-target.push="page"
 		method="POST"
-		x-data={ "{ format: '" + format + "', value: "+ quotedService +" }" }
+		x-data={ "{ format: '" + format + "', value: " + quotedService + " }" }
 		x-init={ initScript }
 		action={ templ.SafeURL(path.Join("/ax", "project", projectName, "service", serviceName)) }
 	>
@@ -55,7 +55,8 @@ templ contentService(projectName, serviceName string, service string, format str
 			<label for="service-name" class="block text-gray-700 text-sm font-bold mb-2">Name: </label>
 			<input id="service-name" name="name" type="text" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required/>
 		}
-		<span id="service-error" 
+		<span
+			id="service-error"
 			if err != nil { 
 				style="color: red; display: block; margin-bottom: 1rem;" 
 			} else { 
@@ -80,10 +81,8 @@ templ contentService(projectName, serviceName string, service string, format str
 			x-model="format"
 			class="rounded-full border-gray-300 focus:ring-2 focus:ring-blue-300"
 		/>JSON
-		<div id="service-detail" class="h-64">
-			
-		</div>
-		<input type="hidden" name={format} x-model="value" />
+		<div id="service-detail" class="h-64"></div>
+		<input type="hidden" name={ format } x-model="value"/>
 		<br/>
 		<button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">Submit</button>
 	</form>

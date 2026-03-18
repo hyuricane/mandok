@@ -141,7 +141,7 @@ func doEditProject(c echo.Context) error {
 	if format == "" {
 		format = "json"
 	}
-	payload := c.FormValue("project")
+	payload := c.FormValue(format)
 	newProject := compose.ComposeProjectYaml{}
 	switch format {
 	case "yaml":

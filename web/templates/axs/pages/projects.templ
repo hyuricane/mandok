@@ -5,6 +5,7 @@ import (
 	"inovasiriset.co.id/docker/manager/web/templates/axs/components"
 	"inovasiriset.co.id/docker/manager/web/templates/layouts"
 	"path"
+	"strconv"
 )
 
 templ contentNewProject(err error) {
@@ -81,27 +82,55 @@ templ Project(layout bool, projectName string, err error) {
 }
 
 templ contentEditProject(projectName, project, format string, err error) {
+	{{
+		if format == "" {
+			format = "json"
+		}
+		quotedProject := strconv.Quote(project)
+		var initScript string = "$watch('format', value => $ajax(window.location.href + '?format=' + value, { target: 'page' }));"
+		switch format {
+		case "yaml":
+			initScript += `
+			window.initMonacoEditor('project-detail','yaml', ` + quotedProject + `).onEndUpdate((e) => {
+				value = window.getMonacoEditor().getValue()
+				console.log('[DEBUG] value', value)
+			});
+			`
+		default:
+			initScript += `
+			window.initMonacoEditor('project-detail','json', ` + quotedProject + `).onEndUpdate((e) => {
+				value = window.getMonacoEditor().getValue()
+				console.log('[DEBUG] value', value)
+			});
+			`
+		}
+	}}
 	<title>{ projectName }: Edit Raw - { format }</title>
 	<h1 class="text-3xl font-bold mb-4">Edit Project: { projectName }</h1>
-	<form x-target.push="page" method="POST" action={ templ.SafeURL(path.Join("/ax", "project", projectName, "edit")) }>
+	<form
+		x-target.push="page"
+		method="POST"
+		x-data={ "{ format: '" + format + "', value: " + quotedProject + " }" }
+		x-init={ initScript }
+		action={ templ.SafeURL(path.Join("/ax", "project", projectName, "edit")) }
+	>
 		@components.Error(err, "edit-project-error")
 		<input
 			type="radio"
 			name="format"
 			value="yaml"
-			checked?={ format == "yaml" }
-			@change="$ajax(window.location.href, { query: { format: 'yaml' }, target: 'page' })"
+			x-model="format"
 			class="rounded-full border-gray-300 focus:ring-2 focus:ring-blue-300"
 		/>YAML
 		<input
 			type="radio"
 			name="format"
 			value="json"
-			checked?={ format == "json" }
-			@change="$ajax(window.location.href, { query: { format: 'json' }, target: 'page' })"
+			x-model="format"
 			class="rounded-full border-gray-300 focus:ring-2 focus:ring-blue-300"
 		/>JSON
-		<textarea id="project-raw" name="project" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline h-64">{ project }</textarea>
+		<div id="project-detail" class="w-full h-full"></div>
+		<input type="hidden" name={ format } x-model="value"/>
 		<br/>
 		<button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">Submit</button>
 	</form>
