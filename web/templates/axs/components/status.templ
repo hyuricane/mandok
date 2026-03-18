@@ -7,16 +7,16 @@ import (
 )
 
 templ Statuses(projectName string, projectStats map[string]compose.ServiceStatus, err error) {
-	<div id="project-status" class="container p-4">
+	<div id="project-status" class="container p-4 overflow-x-auto">
 		<h2 class="text-2xl font-bold mb-4">Statuses</h2>
-		<table class="w-4/5 divide-y divide-gray-200">
+		<table class="w-full divide-y divide-gray-200 table-fixed">
 			<thead class="bg-gray-50">
 				<tr>
-					<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
-					<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
-					<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Running</th>
-					<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">State</th>
-					<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Route</th>
+					<th scope="col" class="w-2/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
+					<th scope="col" class="w-4/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
+					<th scope="col" class="w-1/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Running</th>
+					<th scope="col" class="w-1/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">State</th>
+					<th scope="col" class="w-2/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Route</th>
 					<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
 				</tr>
 			</thead>
@@ -24,10 +24,10 @@ templ Statuses(projectName string, projectStats map[string]compose.ServiceStatus
 				for n, v := range projectStats {
 					<tr id={ fmt.Sprintf("project-status-%s", n) } class="hover:bg-gray-100">
 						<td class="px-6 py-2 whitespace-nowrap">{ n }</td>
-						<td class="px-6 py-2">{ v.Image }</td>
+						<td class="px-6 py-2 break-all">{ v.Image }</td>
 						<td class="px-6 py-2 whitespace-nowrap">{ fmt.Sprintf("%d/%d", v.Running, v.Expected) }</td>
 						<td class="px-6 py-2 whitespace-nowrap">{ v.State }</td>
-						<td class="px-6 py-2 whitespace-nowrap">
+						<td class="px-6 py-2 break-normal">
 							if v.Route != "" {
 								<a href={ templ.SafeURL("//" + v.Route) } target="_blank" class="text-blue-500 hover:underline">{ v.Route }</a> | 
 								<a
