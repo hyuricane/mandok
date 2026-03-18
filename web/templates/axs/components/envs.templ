@@ -1,7 +1,10 @@
 package components
 
-import "path"
-import "inovasiriset.co.id/docker/manager/app/lib/compose"
+import (
+	"fmt"
+	"inovasiriset.co.id/docker/manager/app/lib/compose"
+	"path"
+)
 
 templ Envs(projectName string, envVals []compose.EnvVal, err error) {
 	<div id="project-envs" class="p-4">
@@ -23,13 +26,13 @@ templ Envs(projectName string, envVals []compose.EnvVal, err error) {
 							<a
 								href={ templ.SafeURL(path.Join("/ax", "project", projectName, "envs", "delete", v.Key)) }
 								x-target="project-envs"
-								@click="if(!confirm('delete ' + v.Key + ' env var?')) $event.preventDefault()"
+								@ajax:before={ fmt.Sprintf(`confirm("delete %s env var?") || $event.preventDefault()`, v.Key) }
 								class="text-red-500 hover:underline mr-2"
 							>delete</a>
 							<a
 								href={ templ.SafeURL(path.Join("/ax", "project", projectName, "envs", "secret", v.Key)) }
 								x-target="project-envs"
-								@click="if(!confirm('make ' + v.Key + ' env var secret?')) $event.preventDefault()"
+								@ajax:before={ fmt.Sprintf(`confirm("make %s env var secret?") || $event.preventDefault()`, v.Key) }
 								class="text-blue-500 hover:underline"
 							>secret</a>
 						</td>
@@ -38,13 +41,19 @@ templ Envs(projectName string, envVals []compose.EnvVal, err error) {
 			</tbody>
 			<tfoot>
 				<tr id="add-env-plain" class="hover:bg-gray-100">
-					<td class="px-6 py-4 whitespace-nowrap"><input id="env-name" name="name" class="border rounded px-2 py-1 w-full"/></td>
-					<td class="px-6 py-4 whitespace-nowrap"><input id="env-value" name="value" class="border rounded px-2 py-1 w-full"/></td>
+					<td class="px-6 py-4 whitespace-nowrap"><input id="env-name" x-ref="envNameInput" name="name" class="border rounded px-2 py-1 w-full"/></td>
+					<td class="px-6 py-4 whitespace-nowrap"><input id="env-value" x-ref="envValueInput" name="value" class="border rounded px-2 py-1 w-full"/></td>
 					<td class="px-6 py-4 whitespace-nowrap">
 						<button
 							type="button"
-							x-target="project-envs"
-							@click="$ajax(path.Join('/ax', 'project', projectName, 'envs', 'plain'), { method: 'POST', body: new FormData($el.closest('tr')) })"
+							@click={ fmt.Sprintf(`$ajax('%s', { 
+								method: 'POST', 
+								body: { 
+									name: $refs.envNameInput.value, 
+									value: $refs.envValueInput.value
+								}, 
+								target: "project-envs",
+							})`, path.Join("/ax", "project", projectName, "envs", "plain")) }
 							class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
 						>+</button>
 					</td>

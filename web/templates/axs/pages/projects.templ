@@ -68,14 +68,14 @@ templ Project(layout bool, projectName string, err error) {
 	}}
 	if layout {
 		@layouts.AX(projectName, breadcrumbs...) {
-			<div id="page" x-sync class="container p-4">
+			<div id="page" class="container p-4">
 				@contentProject(projectName, err)
 			</div>
 		}
 		{{ return }}
 	}
 	@components.Breadcrumbs(breadcrumbs...)
-	<div id="page" x-sync class="container p-4">
+	<div id="page" class="container p-4">
 		@contentProject(projectName, err)
 	</div>
 }

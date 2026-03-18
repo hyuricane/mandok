@@ -57,7 +57,7 @@ func setEnv(c echo.Context) error {
 	}
 	envVals, err := compose.ReadEnvFile(projectDir, false)
 	if err != nil {
-		return err
+		return components.Envs(projectName, nil, err).Render(c.Request().Context(), c.Response().Writer)
 	}
 	exists := map[string]int{}
 	for i, v := range envVals {
@@ -80,14 +80,20 @@ func setEnv(c echo.Context) error {
 		if i, ok := exists[name]; ok {
 			envVals[i].Val = value
 			envVals[i].Secret = path.Base(c.Path()) != "plain"
+		} else {
+			envVals = append(envVals, compose.EnvVal{
+				Key:    name,
+				Val:    value,
+				Secret: path.Base(c.Path()) != "plain",
+			})
 		}
 	}
-
 	err = compose.WriteEnvFile(projectDir, envVals)
+	maskedEnvVals, _ := compose.ReadEnvFile(projectDir, true)
 	if err != nil {
-		return err
+		return components.Envs(projectName, maskedEnvVals, err).Render(c.Request().Context(), c.Response().Writer)
 	}
-	return nil
+	return components.Envs(projectName, maskedEnvVals, nil).Render(c.Request().Context(), c.Response().Writer)
 }
 
 func setEnvSecret(c echo.Context) error {
@@ -99,7 +105,7 @@ func setEnvSecret(c echo.Context) error {
 	}
 	envVals, err := compose.ReadEnvFile(projectDir, false)
 	if err != nil {
-		return err
+		return components.Envs(projectName, nil, err).Render(c.Request().Context(), c.Response().Writer)
 	}
 	exists := map[string]int{}
 	for i, v := range envVals {
@@ -109,10 +115,11 @@ func setEnvSecret(c echo.Context) error {
 		envVals[i].Secret = true
 	}
 	err = compose.WriteEnvFile(projectDir, envVals)
+	maskedEnvVals, _ := compose.ReadEnvFile(projectDir, true)
 	if err != nil {
-		return err
+		return components.Envs(projectName, maskedEnvVals, err).Render(c.Request().Context(), c.Response().Writer)
 	}
-	return nil
+	return components.Envs(projectName, maskedEnvVals, nil).Render(c.Request().Context(), c.Response().Writer)
 }
 
 func deleteEnv(c echo.Context) error {
@@ -124,7 +131,7 @@ func deleteEnv(c echo.Context) error {
 	}
 	envVals, err := compose.ReadEnvFile(projectDir, false)
 	if err != nil {
-		return err
+		return components.Envs(projectName, nil, err).Render(c.Request().Context(), c.Response().Writer)
 	}
 	exists := map[string]int{}
 	for i, v := range envVals {
@@ -134,9 +141,9 @@ func deleteEnv(c echo.Context) error {
 		envVals = append(envVals[:i], envVals[i+1:]...)
 	}
 	err = compose.WriteEnvFile(projectDir, envVals)
+	maskedEnvVals, _ := compose.ReadEnvFile(projectDir, true)
 	if err != nil {
-		return err
+		return components.Envs(projectName, maskedEnvVals, err).Render(c.Request().Context(), c.Response().Writer)
 	}
-
-	return nil
+	return components.Envs(projectName, maskedEnvVals, nil).Render(c.Request().Context(), c.Response().Writer)
 }
