@@ -30,14 +30,14 @@ templ contentService(projectName, serviceName string, service string, format str
 		switch format {
 		case "yaml":
 			initScript += `
-			window.initMonacoEditor('service-detail','yaml', `+ quotedService +`).onEndUpdate((e) => {
+			window.initMonacoEditor('service-detail','yaml', ` + quotedService + `).onEndUpdate((e) => {
 				value = window.getMonacoEditor().getValue()
 				console.log('[DEBUG] value', value)
 			});
 			`
 		default:
 			initScript += `
-			window.initMonacoEditor('service-detail','json', `+ quotedService +`).onEndUpdate((e) => {
+			window.initMonacoEditor('service-detail','json', ` + quotedService + `).onEndUpdate((e) => {
 				value = window.getMonacoEditor().getValue()
 				console.log('[DEBUG] value', value)
 			});
@@ -57,10 +57,10 @@ templ contentService(projectName, serviceName string, service string, format str
 		}
 		<span
 			id="service-error"
-			if err != nil { 
-				style="color: red; display: block; margin-bottom: 1rem;" 
-			} else { 
-				style="color: red; display: none; margin-bottom: 1rem;" 
+			if err != nil {
+				style="color: red; display: block; margin-bottom: 1rem;"
+			} else {
+				style="color: red; display: none; margin-bottom: 1rem;"
 			}
 		>
 			if err != nil {
@@ -81,7 +81,7 @@ templ contentService(projectName, serviceName string, service string, format str
 			x-model="format"
 			class="rounded-full border-gray-300 focus:ring-2 focus:ring-blue-300"
 		/>JSON
-		<div id="service-detail" class="h-64"></div>
+		<div id="service-detail" class="h-64 resize-y overflow-y-auto"></div>
 		<input type="hidden" name={ format } x-model="value"/>
 		<br/>
 		<button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">Submit</button>
