@@ -13,20 +13,29 @@ func StartProject(projectDir string, forceRecreate bool, pull bool, services ...
 		return err
 	}
 
-	// forceRecreate: if true, recreate containers even if the image is the same
+	if len(services) > 0 {
+		project.Project, err = project.Project.WithSelectedServices(services)
+		if err != nil {
+			return err
+		}
+	}
+
 	recreatePolicy := api.RecreateDiverged
 	if forceRecreate {
 		recreatePolicy = api.RecreateForce
 	}
 
-	// getAPI() return github.com/docker/compose/v2/pkg/api Compose
+	// apiClient is github.com/docker/compose/v2/pkg/api Compose
 	apiClient := getAPI()
 	err = apiClient.Up(ctx, project.Project, api.UpOptions{
 		Create: api.CreateOptions{
 			Build: &api.BuildOptions{
 				Pull: pull,
 			},
-			Recreate: recreatePolicy,
+			Recreate:      recreatePolicy,
+			Services:      services,
+			RemoveOrphans: true,
+			AssumeYes:     true,
 		},
 		Start: api.StartOptions{
 			Services: services,
