@@ -3,9 +3,9 @@ package middlewares
 import (
 	"bytes"
 	"encoding/base64"
-	"os"
 
 	"github.com/labstack/echo/v4"
+	"inovasiriset.co.id/docker/manager/conf"
 )
 
 func CookieAuth(loginPaths ...string) echo.MiddlewareFunc {
@@ -27,7 +27,7 @@ func CookieAuth(loginPaths ...string) echo.MiddlewareFunc {
 			}
 			username := string(token[:bytes.IndexByte(token, ':')])
 			password := string(token[bytes.IndexByte(token, ':')+1:])
-			if username != os.Getenv("API_USERNAME") || password != os.Getenv("API_PASSWORD") {
+			if username != conf.AppConfig.APIUsername || password != conf.AppConfig.APIPassword {
 				handleHTMXRedirect(c, loginPath)
 				return c.Redirect(302, loginPath)
 			}

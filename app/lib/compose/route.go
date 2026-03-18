@@ -4,13 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"os/exec"
 	"path"
 	"strconv"
 	"strings"
 
-	"github.com/joho/godotenv"
+	"inovasiriset.co.id/docker/manager/conf"
 )
 
 type ServiceRoute struct {
@@ -19,35 +18,8 @@ type ServiceRoute struct {
 	Sticky map[string]interface{} `json:"sticky,omitempty"`
 }
 
-var NETWORK = "mandok"
-
-var TRAEFIK = false
-var TRAEFIK_SSL = false
-var TRAEFIK_HTTP_ENTRYPOINT = "web"
-var TRAEFIK_HTTPS_ENTRYPOINT = "websecure"
-
-func init() {
-	// load env
-	godotenv.Load()
-	if os.Getenv("NETWORK") != "" {
-		NETWORK = os.Getenv("NETWORK")
-	}
-	if traefikStr := os.Getenv("TRAEFIK"); traefikStr != "" {
-		TRAEFIK, _ = strconv.ParseBool(traefikStr)
-	}
-	if traefikSSLStr := os.Getenv("TRAEFIK_SSL"); traefikSSLStr != "" {
-		TRAEFIK_SSL, _ = strconv.ParseBool(traefikSSLStr)
-	}
-	if traefikHTTPSEntrypoint := os.Getenv("TRAEFIK_HTTP_ENTRYPOINT"); traefikHTTPSEntrypoint != "" {
-		TRAEFIK_HTTP_ENTRYPOINT = traefikHTTPSEntrypoint
-	}
-	if traefikHTTPSEntrypoint := os.Getenv("TRAEFIK_HTTPS_ENTRYPOINT"); traefikHTTPSEntrypoint != "" {
-		TRAEFIK_HTTPS_ENTRYPOINT = traefikHTTPSEntrypoint
-	}
-}
-
 func RouteService(projectDir string, serviceName string, route ServiceRoute) error {
-	if !TRAEFIK {
+	if !conf.AppConfig.Traefik {
 		return nil
 	}
 	if projectDir == "" {
@@ -79,7 +51,7 @@ func RouteService(projectDir string, serviceName string, route ServiceRoute) err
 		}
 	}
 	labels["traefik.enable"] = "true"
-	labels["traefik.docker.network"] = NETWORK
+	labels["traefik.docker.network"] = conf.AppConfig.Network
 	// port
 	if route.Port != 0 {
 		labels["traefik.http.services."+project.Name+"_"+serviceName+".loadbalancer.server.port"] = route.Port
@@ -102,11 +74,11 @@ func RouteService(projectDir string, serviceName string, route ServiceRoute) err
 
 	// http
 	labels["traefik.http.routers."+project.Name+"_"+serviceName+".rule"] = "Host(`" + route.Domain + "`)"
-	labels["traefik.http.routers."+project.Name+"_"+serviceName+".entrypoints"] = TRAEFIK_HTTP_ENTRYPOINT
+	labels["traefik.http.routers."+project.Name+"_"+serviceName+".entrypoints"] = conf.AppConfig.TraefikHTTPEntrypoint
 
-	if TRAEFIK_SSL {
+	if conf.AppConfig.TraefikSSL {
 		labels["traefik.http.routers."+project.Name+"_"+serviceName+"-secure.rule"] = "Host(`" + route.Domain + "`)"
-		labels["traefik.http.routers."+project.Name+"_"+serviceName+"-secure.entrypoints"] = TRAEFIK_HTTPS_ENTRYPOINT
+		labels["traefik.http.routers."+project.Name+"_"+serviceName+"-secure.entrypoints"] = conf.AppConfig.TraefikHTTPSEntrypoint
 		labels["traefik.http.routers."+project.Name+"_"+serviceName+"-secure.tls"] = true
 
 		// redirect to https
@@ -127,7 +99,7 @@ func RouteService(projectDir string, serviceName string, route ServiceRoute) err
 			return errors.New("internal server error")
 		}
 	}
-	networks[NETWORK] = nil
+	networks[conf.AppConfig.Network] = nil
 	service["networks"] = networks
 	project.Services[serviceName] = service
 
@@ -135,7 +107,7 @@ func RouteService(projectDir string, serviceName string, route ServiceRoute) err
 	if project.Networks == nil {
 		project.Networks = map[string]interface{}{}
 	}
-	project.Networks[NETWORK] = map[string]interface{}{
+	project.Networks[conf.AppConfig.Network] = map[string]interface{}{
 		"external": true,
 	}
 

@@ -7,12 +7,12 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 
 	"github.com/labstack/echo/v4"
 	"gopkg.in/yaml.v3"
 	"inovasiriset.co.id/docker/manager/app/lib/compose"
+	"inovasiriset.co.id/docker/manager/conf"
 	"inovasiriset.co.id/docker/manager/web/middlewares"
 	"inovasiriset.co.id/docker/manager/web/templates/components"
 	hxPages "inovasiriset.co.id/docker/manager/web/templates/htmxs/pages"
@@ -422,7 +422,7 @@ func doLogin(c echo.Context) error {
 	renderLayout := c.Request().Header.Get("hx-request") != "true"
 	username := c.FormValue("username")
 	password := c.FormValue("password")
-	if username != os.Getenv("API_USERNAME") || password != os.Getenv("API_PASSWORD") {
+	if username != conf.AppConfig.APIUsername || password != conf.AppConfig.APIPassword {
 		return hxPages.Login(renderLayout, username, errors.New("invalid username or password")).Render(c.Request().Context(), c.Response().Writer)
 	}
 

@@ -21,6 +21,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"gopkg.in/yaml.v3"
+	"inovasiriset.co.id/docker/manager/conf"
 	mTypes "inovasiriset.co.id/docker/manager/types"
 )
 
@@ -29,7 +30,7 @@ var registryAuths map[string]string
 var workdirs map[string]string
 
 func init() {
-	godotenv.Load()
+	_ = godotenv.Load()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		log.Printf("[ERROR] new docker client error: %v", err)
@@ -38,7 +39,7 @@ func init() {
 	dockerCli = cli
 	log.Printf("[DEBUG] docker client initialized")
 	registryAuths = map[string]string{}
-	if regauthstr := os.Getenv("REGISTRY_AUTHS"); regauthstr != "" {
+	if regauthstr := conf.AppConfig.RegistryAuths; regauthstr != "" {
 		regauths := strings.Split(regauthstr, ",")
 		for _, auth := range regauths {
 			auth = strings.TrimSpace(auth)
@@ -65,7 +66,7 @@ func init() {
 		}
 	}
 	workdirs = map[string]string{}
-	if workdirsStr := os.Getenv("WORKDIRS"); workdirsStr != "" {
+	if workdirsStr := conf.AppConfig.Workdirs; workdirsStr != "" {
 		segments := strings.Split(workdirsStr, ";")
 
 		for _, segment := range segments {
@@ -364,10 +365,7 @@ func getContainers(projectName string, containerName string) ([]types.Container,
 
 func restartContainer(workdir string, containerName string, configFiles ...string) error {
 	// Build docker compose command arguments
-	cmdName := os.Getenv("DOCKER_COMPOSE_CMD_NAME")
-	if cmdName == "" {
-		cmdName = "docker compose"
-	}
+	cmdName := conf.AppConfig.DockerComposeCmdName
 	args := []string{}
 	cleanEnv := cleanEnvVars()
 

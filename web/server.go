@@ -3,10 +3,10 @@ package web
 import (
 	"io/fs"
 	"log"
-	"os"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"inovasiriset.co.id/docker/manager/conf"
 	apiHandlers "inovasiriset.co.id/docker/manager/web/handlers/api/v1"
 	"inovasiriset.co.id/docker/manager/web/handlers/ax"
 	"inovasiriset.co.id/docker/manager/web/handlers/dashboard"
@@ -60,14 +60,8 @@ func ListenHttp(statics map[string][]fs.FS) error {
 	apiHandlers.RouteCompose(app.Group("/api/compose", middlewares.MiddlewareAuth()))
 	apiHandlers.RouteRepo(app.Group("/api/repo", middlewares.MiddlewareAuth()))
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-	ip := os.Getenv("IP")
-	if ip == "" {
-		ip = "0.0.0.0"
-	}
+	port := conf.AppConfig.Port
+	ip := conf.AppConfig.IP
 	log.Println("Starting server on ", ip+":"+port)
 	return app.Start(ip + ":" + port)
 }

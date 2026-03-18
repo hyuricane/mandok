@@ -17,25 +17,16 @@ import (
 	"github.com/docker/compose/v2/pkg/compose"
 	"github.com/docker/docker/api/types/registry"
 	dockerclient "github.com/docker/docker/client"
-	"github.com/joho/godotenv"
 	"go.yaml.in/yaml/v3"
+	"inovasiriset.co.id/docker/manager/conf"
 )
 
-var PROJECT_DIRS = "projects"
 var _composeApi *api.Compose
 var _dockerClient *dockerclient.Client
 
 const COMPOSE_VERSION = "2.40.3"
 
 func init() {
-	// load env
-	godotenv.Load()
-	if os.Getenv("PROJECT_DIRS") != "" {
-		PROJECT_DIRS = os.Getenv("PROJECT_DIRS")
-	}
-	if os.Getenv("NETWORK") != "" {
-		NETWORK = os.Getenv("NETWORK")
-	}
 	var err error
 	_dockerClient, err = dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
 	if err != nil {
@@ -89,7 +80,7 @@ func getAPI() api.Compose {
 
 func registryAuthsFromEnv() []registry.AuthConfig {
 	// username:password@registryhost,...
-	registryAuth := os.Getenv("REGISTRY_AUTHS")
+	registryAuth := conf.AppConfig.RegistryAuths
 	registryAuths := strings.Split(registryAuth, ",")
 	auths := []registry.AuthConfig{}
 	for _, registryAuth := range registryAuths {

@@ -6,13 +6,13 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"os"
 	"path"
 	"strconv"
 
 	"github.com/labstack/echo/v4"
 	"gopkg.in/yaml.v3"
 	"inovasiriset.co.id/docker/manager/app/lib/compose"
+	"inovasiriset.co.id/docker/manager/conf"
 	"inovasiriset.co.id/docker/manager/web/middlewares"
 	"inovasiriset.co.id/docker/manager/web/templates/components"
 	"inovasiriset.co.id/docker/manager/web/templates/pages"
@@ -533,7 +533,7 @@ func login(c echo.Context) error {
 func doLogin(c echo.Context) error {
 	username := c.FormValue("username")
 	password := c.FormValue("password")
-	if username != os.Getenv("API_USERNAME") || password != os.Getenv("API_PASSWORD") {
+	if username != conf.AppConfig.APIUsername || password != conf.AppConfig.APIPassword {
 		return c.Redirect(302, "/login?username="+username)
 	}
 

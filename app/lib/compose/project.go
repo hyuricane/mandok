@@ -11,19 +11,18 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/joho/godotenv"
 	"gopkg.in/yaml.v3"
+	"inovasiriset.co.id/docker/manager/conf"
 )
 
 func init() {
-	godotenv.Load()
 	if err := login(); err != nil {
 		panic(err)
 	}
 
 	// create project dirs if not exists
-	if _, err := os.Stat(PROJECT_DIRS); os.IsNotExist(err) {
-		if err := os.MkdirAll(PROJECT_DIRS, 0755); err != nil {
+	if _, err := os.Stat(conf.AppConfig.ProjectDirs); os.IsNotExist(err) {
+		if err := os.MkdirAll(conf.AppConfig.ProjectDirs, 0755); err != nil {
 			log.Fatalf("[ERROR] create project dirs %v", err)
 		}
 	}
@@ -46,7 +45,7 @@ func CreateProject(name string, projectConfig ComposeProjectYaml) (string, error
 		projectConfig.Services = map[string]map[string]interface{}{}
 	}
 	// create dir
-	projectPath := path.Join(PROJECT_DIRS, name)
+	projectPath := path.Join(conf.AppConfig.ProjectDirs, name)
 	err := os.MkdirAll(projectPath, 0755)
 	if err != nil {
 		return "", err
@@ -85,8 +84,8 @@ func CreateProject(name string, projectConfig ComposeProjectYaml) (string, error
 }
 
 func HasProject(name string) string {
-	projectPath := path.Join(PROJECT_DIRS, name)
-	projectDir := filepath.Join(PROJECT_DIRS, name)
+	projectPath := path.Join(conf.AppConfig.ProjectDirs, name)
+	projectDir := filepath.Join(conf.AppConfig.ProjectDirs, name)
 	if _, err := os.Stat(projectDir); os.IsNotExist(err) {
 		return ""
 	} else if err != nil {
@@ -255,7 +254,7 @@ func handleNonIntepolatedVolumeSlice(nonInterpolatedVolumes, interpolatedVolumes
 
 func GetProjects() ([]string, error) {
 	projects := []string{}
-	files, err := os.ReadDir(PROJECT_DIRS)
+	files, err := os.ReadDir(conf.AppConfig.ProjectDirs)
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +268,7 @@ func GetProjects() ([]string, error) {
 
 func login() error {
 	// go to project directory and trigger docker compose up
-	registryAuth := os.Getenv("REGISTRY_AUTHS")
+	registryAuth := conf.AppConfig.RegistryAuths
 	if registryAuth == "" {
 		return nil
 	}

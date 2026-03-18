@@ -6,18 +6,11 @@ import (
 	"log"
 	"os"
 
-	"github.com/joho/godotenv"
 	"inovasiriset.co.id/docker/manager/web"
 )
 
 //go:embed static/*
 var staticFs embed.FS
-
-func init() {
-	if err := godotenv.Load(); err == nil {
-		log.Printf("[INFO] .env file loaded")
-	}
-}
 
 func main() {
 	staticSubFs, err := fs.Sub(staticFs, "static")
