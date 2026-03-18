@@ -7,21 +7,21 @@ import (
 )
 
 templ Envs(projectName string, envVals []compose.EnvVal, err error) {
-	<div id="project-envs" class="p-4">
+	<div id="project-envs" class="p-4 overflow-x-auto">
 		<h2 class="text-2xl font-bold mb-4">Envs</h2>
-		<table class="min-w-full divide-y divide-gray-200">
+		<table class="w-full divide-y divide-gray-200 table-fixed">
 			<thead>
 				<tr class="bg-gray-50">
-					<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-					<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
-					<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">...</th>
+					<th class="w-4/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+					<th class="w-6/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+					<th class="w-2/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">...</th>
 				</tr>
 			</thead>
 			<tbody>
 				for _, v := range envVals {
 					<tr class="hover:bg-gray-100">
 						<td class="px-6 py-2">{ v.Key }</td>
-						<td class="px-6 py-2">{ v.Val }</td>
+						<td class="px-6 py-2 break-all">{ v.Val }</td>
 						<td class="px-6 py-2 whitespace-nowrap">
 							<a
 								href={ templ.SafeURL(path.Join("/ax", "project", projectName, "envs", "delete", v.Key)) }
@@ -41,8 +41,8 @@ templ Envs(projectName string, envVals []compose.EnvVal, err error) {
 			</tbody>
 			<tfoot>
 				<tr id="add-env-plain" class="hover:bg-gray-100">
-					<td class="px-6 py-4 whitespace-nowrap"><input id="env-name" x-ref="envNameInput" name="name" class="border rounded px-2 py-1 w-full"/></td>
-					<td class="px-6 py-4 whitespace-nowrap"><input id="env-value" x-ref="envValueInput" name="value" class="border rounded px-2 py-1 w-full"/></td>
+					<td class="px-6 py-4"><input id="env-name" x-ref="envNameInput" name="name" class="border rounded px-2 py-1 w-full"/></td>
+					<td class="px-6 py-4"><input id="env-value" x-ref="envValueInput" name="value" class="border rounded px-2 py-1 w-full"/></td>
 					<td class="px-6 py-4 whitespace-nowrap">
 						<button
 							type="button"
@@ -56,6 +56,14 @@ templ Envs(projectName string, envVals []compose.EnvVal, err error) {
 							})`, path.Join("/ax", "project", projectName, "envs", "plain")) }
 							class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
 						>+</button>
+					</td>
+				</tr>
+				<tr>
+					<td colspan="3">
+						<form action={ templ.SafeURL(path.Join("/ax", "project", projectName, "envs")) } method="post" x-target="project-envs">
+							<textarea id="plain_envs" name="envs" class="border rounded px-2 py-1 w-full" rows="10"></textarea>
+							<button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">add all</button>
+						</form>
 					</td>
 				</tr>
 			</tfoot>
