@@ -6,9 +6,9 @@ import (
 	"path"
 )
 
-func GetService(projectDir string, service string, nointerpolate ...bool) (map[string]interface{}, error) {
+func GetService(projectDir string, service string, noInference ...bool) (map[string]interface{}, error) {
 	ctx := context.Background()
-	project, err := LoadProject(ctx, projectDir)
+	project, err := LoadProject(ctx, projectDir, noInference...)
 	if err != nil {
 		return nil, err
 	}

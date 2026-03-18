@@ -141,7 +141,7 @@ func (p *Project) ConfigModelJson() ([]byte, error) {
 	return json.Marshal(p.model)
 }
 
-func LoadProject(ctx context.Context, projectDir string) (*Project, error) {
+func LoadProject(ctx context.Context, projectDir string, noInference ...bool) (*Project, error) {
 	projectDirAbs, err := filepath.Abs(projectDir)
 	if err != nil {
 		return nil, err
@@ -158,15 +158,24 @@ func LoadProject(ctx context.Context, projectDir string) (*Project, error) {
 	if cfgFile == "" {
 		return nil, fmt.Errorf("no compose file found in %s", projectDirAbs)
 	}
+	projectOptionsFns := []cli.ProjectOptionsFn{
+		cli.WithWorkingDirectory(projectDirAbs),
+	}
+	if len(noInference) == 0 || !noInference[0] {
+		projectOptionsFns = append(projectOptionsFns,
+			cli.WithEnvFiles(),
+			cli.WithDotEnv,
+			cli.WithDefaultConfigPath,
+			cli.WithInterpolation(true),
+		)
+	} else {
+		projectOptionsFns = append(projectOptionsFns,
+			cli.WithInterpolation(false),
+		)
+	}
 	options, err := cli.NewProjectOptions(
 		[]string{cfgFile},
-		cli.WithWorkingDirectory(projectDirAbs),
-		cli.WithResolvedPaths(true),
-		// cli.WithOsEnv,
-		cli.WithDotEnv,
-		cli.WithConfigFileEnv,
-		cli.WithDefaultConfigPath,
-		cli.WithEnvFiles(".env"),
+		projectOptionsFns...,
 	)
 	if err != nil {
 		return nil, err
