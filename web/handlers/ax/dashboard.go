@@ -170,9 +170,9 @@ func startProject(c echo.Context) error {
 	}
 	err := compose.StartProject(projectDir, false, false)
 	if err != nil {
-		return c.Redirect(302, "/ax/project/"+projectName)
+		return c.Redirect(302, "/ax/project/"+projectName+"/status")
 	}
-	return status(c)
+	return c.Redirect(302, "/ax/project/"+projectName+"/status")
 }
 
 func downProject(c echo.Context) error {
