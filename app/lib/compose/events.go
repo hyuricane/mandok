@@ -2,10 +2,9 @@ package compose
 
 import (
 	"context"
-	"encoding/json"
-	"log"
-	"os/exec"
-	"path"
+	"time"
+
+	"github.com/docker/compose/v2/pkg/api"
 )
 
 type DockerComposeEvent struct {
@@ -22,32 +21,34 @@ type attributes struct {
 }
 
 func EventStreams(projectDir string) (chan DockerComposeEvent, func(), error) {
-	args := []string{"events", "--json"}
-	cmd := exec.CommandContext(context.Background(), "docker-compose", args...)
-	cmd.Dir = projectDir
-	out, cancel, err := docExecStream(cmd)
+	ctx := context.Background()
+	project, err := LoadProject(ctx, projectDir)
 	if err != nil {
 		return nil, nil, err
 	}
+
 	ch := make(chan DockerComposeEvent, 100)
-	projectName := path.Base(projectDir)
-	go func() {
-		for line := range out {
-			event := DockerComposeEvent{}
-			log.Printf("[DEBUG] event line %s", line)
-			if err := json.Unmarshal([]byte(line), &event); err != nil {
-				log.Printf("[ERROR] %v", err)
-				continue
+
+	cancelableContext, cancel := context.WithCancel(ctx)
+
+	go getAPI().Events(cancelableContext, project.Name, api.EventsOptions{
+		Consumer: func(event api.Event) error {
+			dEvent := DockerComposeEvent{
+				Action:  event.Status,
+				Service: event.Service,
+				attributes: attributes{
+					Name: event.Attributes["name"],
+				},
+				Time: event.Timestamp.Format(time.RFC3339),
 			}
-			// remove project name ({projectName}-{serviceName}-{instance}) from event.Name
-			if len(event.attributes.Name) > len(projectName) {
-				if event.attributes.Name[len(projectName)] == '-' {
-					event.attributes.Name = event.attributes.Name[len(projectName)+1:]
-				}
+			if event.Container != "" {
+				dEvent.Type = "container"
 			}
-			ch <- event
-		}
-		close(ch)
-	}()
+
+			ch <- dEvent
+			return nil
+		},
+	})
+
 	return ch, cancel, nil
 }

@@ -1,7 +1,37 @@
 package components
 
-import "inovasiriset.co.id/docker/manager/app/lib/compose"
+import (
+	"fmt"
+	"inovasiriset.co.id/docker/manager/app/lib/compose"
+)
 
 templ Event(event compose.DockerComposeEvent) {
-	<span x-init="setTimeout(() => $el.remove(), 3000)" class="event">{ event.Action } { event.Service } { event.Name }</span>
+	<li x-init="setTimeout(() => $el.remove(), 3000)" class="event">{ event.Action } { event.Service } { event.Name }</li>
+}
+
+templ EventList(projectName string) {
+	<ul
+		x-data="{ source: null, destroy: () => { $data.source?.close() } }"
+		x-init={ fmt.Sprintf(`
+		$data.source = new EventSource('/ax/project/%s/events');
+		$data.source.addEventListener('container', (e) => {
+			$dispatch('container', e.data);
+		});
+		$data.source.onmessage = (e) => {
+			$dispatch('message', e.data);
+		};
+    `, projectName) }
+		id="event-list"
+		@container.window="
+			const template = document.createElement('template');
+			template.innerHTML = $event.detail.trim();
+			$el.append(template.content);
+		"
+		@message.window="
+			const template = document.createElement('template');
+			template.innerHTML = $event.detail.trim();
+			$el.append(template.content);
+		"
+		class="fixed inset-0 opacity-50 pointer-events-none z-10 p-4"
+	></ul>
 }

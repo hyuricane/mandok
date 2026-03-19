@@ -39,6 +39,7 @@ templ NewProject(layout bool, err error) {
 
 templ contentProject(projectName string, err error) {
 	<title>{ projectName }</title>
+	@components.EventList(projectName)
 	<div class="flex space-x-4 mb-4">
 		<a
 			href={ templ.SafeURL(path.Join("/ax", "project", projectName, "start")) }
