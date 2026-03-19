@@ -2,12 +2,12 @@ package ax
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"gopkg.in/yaml.v3"
@@ -413,21 +413,21 @@ func doLogin(c echo.Context) error {
 	if username != conf.AppConfig.APIUsername || password != conf.AppConfig.APIPassword {
 		return axPages.Login(renderLayout, username, errors.New("invalid username or password")).Render(c.Request().Context(), c.Response().Writer)
 	}
+	maxAge := 24 * 60 * 60
+	token, err := middlewares.JwtGenerateToken(username, time.Second*time.Duration(maxAge))
+	if err != nil {
+		return axPages.Login(renderLayout, username, err).Render(c.Request().Context(), c.Response().Writer)
+	}
 
-	token64 := bytes.NewBuffer([]byte{})
-	enc := base64.NewEncoder(base64.StdEncoding, token64)
-	_, err := enc.Write([]byte(username + ":" + password))
-	if err != nil {
-		return axPages.Login(renderLayout, username, err).Render(c.Request().Context(), c.Response().Writer)
-	}
-	err = enc.Close()
-	if err != nil {
-		return axPages.Login(renderLayout, username, err).Render(c.Request().Context(), c.Response().Writer)
-	}
 	c.SetCookie(&http.Cookie{
-		Name:  "token",
-		Value: token64.String(),
-		Path:  "/",
+		Name:     "token",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   maxAge,
+		// TODO: check if we actually have SSL
+		Secure: false, // conf.AppConfig.TraefikSSL,
 	})
 	return c.Redirect(302, "/ax")
 }

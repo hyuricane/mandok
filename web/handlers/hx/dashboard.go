@@ -2,12 +2,12 @@ package hx
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"gopkg.in/yaml.v3"
@@ -426,20 +426,21 @@ func doLogin(c echo.Context) error {
 		return hxPages.Login(renderLayout, username, errors.New("invalid username or password")).Render(c.Request().Context(), c.Response().Writer)
 	}
 
-	token64 := bytes.NewBuffer([]byte{})
-	enc := base64.NewEncoder(base64.StdEncoding, token64)
-	_, err := enc.Write([]byte(username + ":" + password))
-	if err != nil {
-		return hxPages.Login(renderLayout, username, err).Render(c.Request().Context(), c.Response().Writer)
-	}
-	err = enc.Close()
+	maxAge := 60 * 60 * 24 // 1 day
+
+	token, err := middlewares.JwtGenerateToken(username, time.Duration(maxAge)*time.Second)
 	if err != nil {
 		return hxPages.Login(renderLayout, username, err).Render(c.Request().Context(), c.Response().Writer)
 	}
 	c.SetCookie(&http.Cookie{
-		Name:  "token",
-		Value: token64.String(),
-		Path:  "/",
+		Name:     "token",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   maxAge,
+		// TODO: check if we actually have SSL
+		Secure: false, // conf.AppConfig.TraefikSSL,
 	})
 	hxRedirect(c, "/hx")
 	return c.Redirect(302, "/hx")

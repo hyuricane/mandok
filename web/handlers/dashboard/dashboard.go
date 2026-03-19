@@ -2,12 +2,12 @@ package dashboard
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"log"
 	"net/http"
 	"path"
 	"strconv"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"gopkg.in/yaml.v3"
@@ -537,20 +537,21 @@ func doLogin(c echo.Context) error {
 		return c.Redirect(302, "/login?username="+username)
 	}
 
-	token64 := bytes.NewBuffer([]byte{})
-	enc := base64.NewEncoder(base64.StdEncoding, token64)
-	_, err := enc.Write([]byte(username + ":" + password))
-	if err != nil {
-		return err
-	}
-	err = enc.Close()
+	maxAge := 60 * 60 * 24 // 1 day
+
+	token, err := middlewares.JwtGenerateToken(username, time.Duration(maxAge)*time.Second)
 	if err != nil {
 		return err
 	}
 	c.SetCookie(&http.Cookie{
-		Name:  "token",
-		Value: token64.String(),
-		Path:  "/",
+		Name:     "token",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   maxAge,
+		// TODO: check if we actually have SSL
+		Secure: false, // conf.AppConfig.TraefikSSL,
 	})
 	return c.Redirect(302, "/")
 }
