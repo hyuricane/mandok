@@ -141,7 +141,12 @@ func (p *Project) ConfigModelJson() ([]byte, error) {
 	return json.Marshal(p.model)
 }
 
-func LoadProject(ctx context.Context, projectDir string, noInference ...bool) (*Project, error) {
+type LoadProjectOptions struct {
+	NoInference bool
+	EnvFiles    []string
+}
+
+func LoadProject(ctx context.Context, projectDir string, options ...LoadProjectOptions) (*Project, error) {
 	projectDirAbs, err := filepath.Abs(projectDir)
 	if err != nil {
 		return nil, err
@@ -161,9 +166,15 @@ func LoadProject(ctx context.Context, projectDir string, noInference ...bool) (*
 	projectOptionsFns := []cli.ProjectOptionsFn{
 		cli.WithWorkingDirectory(projectDirAbs),
 	}
-	if len(noInference) == 0 || !noInference[0] {
+	noInference := false
+	envFiles := []string{}
+	if len(options) > 0 {
+		noInference = options[0].NoInference
+		envFiles = options[0].EnvFiles
+	}
+	if !noInference {
 		projectOptionsFns = append(projectOptionsFns,
-			cli.WithEnvFiles(),
+			cli.WithEnvFiles(envFiles...),
 			cli.WithDotEnv,
 			cli.WithDefaultConfigPath,
 			cli.WithInterpolation(true),
@@ -171,9 +182,10 @@ func LoadProject(ctx context.Context, projectDir string, noInference ...bool) (*
 	} else {
 		projectOptionsFns = append(projectOptionsFns,
 			cli.WithInterpolation(false),
+			cli.WithResolvedPaths(false),
 		)
 	}
-	options, err := cli.NewProjectOptions(
+	projectOptions, err := cli.NewProjectOptions(
 		[]string{cfgFile},
 		projectOptionsFns...,
 	)
@@ -181,7 +193,7 @@ func LoadProject(ctx context.Context, projectDir string, noInference ...bool) (*
 		return nil, err
 	}
 
-	project, err := options.LoadProject(ctx)
+	project, err := projectOptions.LoadProject(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +218,7 @@ func LoadProject(ctx context.Context, projectDir string, noInference ...bool) (*
 	}
 	return &Project{
 		Project: project,
-		option:  options,
+		option:  projectOptions,
 	}, nil
 }
 

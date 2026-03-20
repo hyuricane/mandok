@@ -2,14 +2,15 @@ package compose
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/containerd/continuity/fs"
+	"github.com/docker/compose/v2/pkg/api"
 )
 
 type EnvVal struct {
@@ -33,20 +34,40 @@ func (ev EnvVal) MarshalJSON() ([]byte, error) {
 }
 
 // dry run docker compose up
-func TryProject(projectDir string, configFileName string) error {
-	args := []string{"--dry-run"}
-	if configFileName != "" {
-		args = append(args, "-f", configFileName)
-	}
-	args = append(args, "up", "-d")
-	cmd := exec.Command("docker-compose", args...)
-	cmd.Dir = projectDir
-	_, err := doExec(cmd)
-
+func TryProject(projectDir string, configFileName string, services ...string) error {
+	ctx := context.Background()
+	project, err := LoadProject(ctx, projectDir)
 	if err != nil {
-		if cErr := NewComposeError(bytes.NewBufferString(err.Error())); cErr != nil {
-			return cErr
+		return err
+	}
+
+	if len(services) > 0 {
+		project.Project, err = project.Project.WithSelectedServices(services)
+		if err != nil {
+			return err
 		}
+	}
+	apiClient := getAPI()
+	dryRunCtx, err := apiClient.DryRunMode(ctx, true)
+	if err != nil {
+		return err
+	}
+	err = apiClient.Up(dryRunCtx, project.Project, api.UpOptions{
+		Create: api.CreateOptions{
+			Build: &api.BuildOptions{
+				Pull: true,
+			},
+			Recreate:  api.RecreateDiverged,
+			Services:  services,
+			AssumeYes: true,
+		},
+		Start: api.StartOptions{
+			Services: services,
+			Project:  project.Project,
+			Wait:     true,
+		},
+	})
+	if err != nil {
 		return err
 	}
 	return nil
