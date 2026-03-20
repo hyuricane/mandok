@@ -468,7 +468,8 @@ func getLogs(c echo.Context) error {
 	c.Response().Header().Set("Connection", "keep-alive")
 	c.Response().WriteHeader(200)
 
-	ch, cancel, err := compose.LogStream(projectDir, serviceName, tail)
+	ch, cancel, err := compose.LogStreamWithContext(c.Request().Context(), projectDir, serviceName, tail)
+
 	if err != nil {
 		return c.JSON(500, map[string]string{
 			"message": err.Error(),
@@ -484,7 +485,7 @@ func getLogs(c echo.Context) error {
 				return nil
 			}
 			for _, line := range strings.Split(lines, "\n") {
-				c.Response().Writer.Write([]byte(fmt.Sprintf("event: log\ndata: %s\n\n", line)))
+				fmt.Fprintf(c.Response().Writer, "event: log\ndata: %s\n\n", line)
 			}
 			c.Response().Flush()
 		}

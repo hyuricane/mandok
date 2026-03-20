@@ -390,11 +390,14 @@ func getLog(c echo.Context) error {
 	if projectDir == "" {
 		return c.Redirect(302, "/hx/")
 	}
-	out, cancel, err := compose.LogStream(projectDir, serviceName, tail)
+	out, cancel, err := compose.LogStreamWithContext(c.Request().Context(), projectDir, serviceName, tail)
 	if err != nil {
 		return err
 	}
-	defer cancel()
+	go func() {
+		<-c.Request().Context().Done()
+		cancel()
+	}()
 	components.StreamLog(out).Render(c.Request().Context(), c.Response().Writer)
 	return nil
 }
