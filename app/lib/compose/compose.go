@@ -144,6 +144,7 @@ func (p *Project) ConfigModelJson() ([]byte, error) {
 type LoadProjectOptions struct {
 	NoInference bool
 	EnvFiles    []string
+	ConfigFiles []string
 }
 
 func LoadProject(ctx context.Context, projectDir string, options ...LoadProjectOptions) (*Project, error) {
@@ -151,7 +152,13 @@ func LoadProject(ctx context.Context, projectDir string, options ...LoadProjectO
 	if err != nil {
 		return nil, err
 	}
-	candidates := []string{"compose.yaml", "docker-compose.yml", "compose.yml"}
+	candidates := []string{}
+	if len(options) > 0 && len(options[0].ConfigFiles) > 0 {
+		candidates = options[0].ConfigFiles
+	}
+	if len(candidates) == 0 {
+		candidates = []string{"compose.yaml", "docker-compose.yml", "compose.yml"}
+	}
 	var cfgFile string
 	for _, name := range candidates {
 		p := filepath.Join(projectDirAbs, name)
@@ -199,7 +206,7 @@ func LoadProject(ctx context.Context, projectDir string, options ...LoadProjectO
 	}
 
 	// apply missing docker compose labels to each services
-	for _, service := range project.Services {
+	for name, service := range project.Services {
 		if service.Labels == nil {
 			service.Labels = make(map[string]string)
 		}
@@ -213,7 +220,7 @@ func LoadProject(ctx context.Context, projectDir string, options ...LoadProjectO
 			service.CustomLabels[api.WorkingDirLabel] = projectDirAbs
 			service.CustomLabels[api.ServiceLabel] = service.Name
 			service.CustomLabels[api.VersionLabel] = COMPOSE_VERSION
-			project.Services[service.Name] = service
+			project.Services[name] = service
 		}
 	}
 	return &Project{

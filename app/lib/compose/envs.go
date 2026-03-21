@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/containerd/continuity/fs"
-	"github.com/docker/compose/v2/pkg/api"
 )
 
 type EnvVal struct {
@@ -36,41 +35,10 @@ func (ev EnvVal) MarshalJSON() ([]byte, error) {
 // dry run docker compose up
 func TryProject(projectDir string, configFileName string, services ...string) error {
 	ctx := context.Background()
-	project, err := LoadProject(ctx, projectDir)
-	if err != nil {
-		return err
-	}
-
-	if len(services) > 0 {
-		project.Project, err = project.Project.WithSelectedServices(services)
-		if err != nil {
-			return err
-		}
-	}
-	apiClient := getAPI()
-	dryRunCtx, err := apiClient.DryRunMode(ctx, true)
-	if err != nil {
-		return err
-	}
-	err = apiClient.Up(dryRunCtx, project.Project, api.UpOptions{
-		Create: api.CreateOptions{
-			Build: &api.BuildOptions{
-				Pull: true,
-			},
-			Recreate:  api.RecreateDiverged,
-			Services:  services,
-			AssumeYes: true,
-		},
-		Start: api.StartOptions{
-			Services: services,
-			Project:  project.Project,
-			Wait:     true,
-		},
+	_, err := LoadProject(ctx, projectDir, LoadProjectOptions{
+		ConfigFiles: []string{configFileName},
 	})
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func ReadEnvFile(projectDir string, masked bool) (vals []EnvVal, err error) {

@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -9,7 +8,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -21,6 +19,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"gopkg.in/yaml.v3"
+	"inovasiriset.co.id/docker/manager/app/lib/compose"
 	"inovasiriset.co.id/docker/manager/conf"
 	mTypes "inovasiriset.co.id/docker/manager/types"
 )
@@ -364,62 +363,7 @@ func getContainers(projectName string, containerName string) ([]types.Container,
 }
 
 func restartContainer(workdir string, containerName string, configFiles ...string) error {
-	// Build docker compose command arguments
-	cmdName := conf.AppConfig.DockerComposeCmdName
-	args := []string{}
-	cleanEnv := cleanEnvVars()
-
-	projectName := ""
-	// Add config files
-	for _, configFile := range configFiles {
-		args = append(args, "-f", configFile)
-		configFileBytes, err := os.ReadFile(configFile)
-		if err != nil {
-			log.Printf("[ERROR] read config file error: %v", err)
-			return err
-		}
-		configFileYaml := yaml.NewDecoder(bytes.NewReader(configFileBytes))
-		var config map[string]any
-		configFileYaml.Decode(&config)
-		if name, ok := config["name"].(string); ok {
-			projectName = name
-		}
-	}
-	if projectName == "" {
-		projectName = filepath.Base(workdir)
-	}
-	args = append(args, "-p", projectName)
-
-	// Pull the latest image first
-	pullArgs := append(args, "pull", containerName)
-	// split cmdName
-	cmdNameSplit := strings.Split(cmdName, " ")
-	pullCmd := exec.Command(cmdNameSplit[0], append(cmdNameSplit[1:], pullArgs...)...)
-	pullCmd.Dir = workdir
-	pullCmd.Env = cleanEnv
-	pullOut, pullErr := pullCmd.CombinedOutput()
-	if pullErr != nil {
-		log.Printf("[DEBUG] pull command: %s", pullCmd.String())
-		log.Printf("[DEBUG] pull output: %s", string(pullOut))
-		log.Printf("[WARNING] pull error (continuing anyway): %v", pullErr)
-		// Continue even if pull fails - the image might already exist
-	}
-
-	// Restart the container using up with force-recreate
-	upArgs := append(args, "up", "-d", "--force-recreate", containerName)
-	upCmd := exec.Command(cmdNameSplit[0], append(cmdNameSplit[1:], upArgs...)...)
-	upCmd.Dir = workdir
-	upCmd.Env = cleanEnv
-	upOut, upErr := upCmd.CombinedOutput()
-	if upErr != nil {
-		log.Printf("[DEBUG] up command: %s", upCmd.String())
-		log.Printf("[DEBUG] up output: %s", string(upOut))
-		log.Printf("[WARNING] up error (continuing anyway): %v", upErr)
-		return upErr
-	}
-
-	log.Printf("[DEBUG] container %s restarted successfully", containerName)
-	return nil
+	return compose.StartProject(workdir, true, true, containerName)
 }
 
 func updateImageTagEnv(envPath string, containerName string, imageTag string) error {

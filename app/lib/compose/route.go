@@ -1,10 +1,9 @@
 package compose
 
 import (
-	"encoding/json"
+	"context"
 	"errors"
 	"fmt"
-	"os/exec"
 	"path"
 	"strconv"
 	"strings"
@@ -195,28 +194,24 @@ func GetRoutes(projectDir string, services ...string) (map[string]ServiceRoute, 
 	if projectDir == "" {
 		return nil, nil
 	}
-	args := []string{"config", "--format", "json", "--no-path-resolution"}
-	args = append(args, services...)
-
-	cmd := exec.Command("docker-compose", args...)
-	cmd.Dir = projectDir
-	out, err := doExec(cmd)
+	ctx := context.Background()
+	project, err := LoadProject(ctx, projectDir)
 	if err != nil {
 		return nil, err
 	}
-	project := ComposeProjectYaml{}
-	err = json.NewDecoder(out).Decode(&project)
+
+	configModel, err := project.ConfigModel(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	serviceRoutes := map[string]ServiceRoute{}
-	for serviceName, serviceConfig := range project.Services {
-		labels, ok := serviceConfig["labels"]
+	for serviceName, serviceConfig := range configModel["services"].(map[string]interface{}) {
+		serviceConfigMap, ok := serviceConfig.(map[string]interface{})
 		if !ok {
 			continue
 		}
-		labelsMap, ok := labels.(map[string]interface{})
+		labelsMap, ok := serviceConfigMap["labels"].(map[string]interface{})
 		if !ok {
 			continue
 		}

@@ -1,11 +1,14 @@
 package compose
 
 import (
-	"encoding/json"
+	"context"
+	"fmt"
 	"log"
-	"os/exec"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/docker/compose/v2/pkg/api"
 )
 
 type ExpectedPSData struct {
@@ -97,40 +100,35 @@ func GetStatus(projectDir string, all bool, services ...string) (map[string]Serv
 		retval[k] = ss
 	}
 
-	args := []string{"ps", "--format", "json"}
-	if all {
-		args = append(args, "-a")
-	}
-	args = append(args, services...)
-	cmd := exec.Command("docker", append([]string{"compose"}, args...)...)
-	cmd.Dir = projectDir
-
-	out, err := doExec(cmd)
+	ctx := context.Background()
+	project, err := LoadProject(ctx, projectDir)
 	if err != nil {
 		return nil, err
 	}
-	outputStrs := strings.Split(out.String(), "\n")
-	for _, outputStr := range outputStrs {
-		if outputStr == "" {
-			continue
-		}
-		psData := ExpectedPSData{}
-		if err := json.Unmarshal([]byte(outputStr), &psData); err != nil {
-			return nil, err
-		}
-		status, ok := retval[psData.Service]
+	psAll := len(services) == 0
+	apiClient := getAPI()
+	psSummary, err := apiClient.Ps(ctx, project.Name, api.PsOptions{
+		Project:  project.Project,
+		Services: services,
+		All:      psAll,
+	})
+	if err != nil {
+		return nil, err
+	}
+	for _, ps := range psSummary {
+		status, ok := retval[ps.Service]
 		if ok {
 			if status.Expected == 0 {
 				status.Expected = 1
 			}
 			if status.State == "" {
-				status.State = psData.State
+				status.State = ps.State
 			}
-			if psData.State == "running" {
+			if ps.State == "running" {
 				status.Running++
 				status.State = "running"
 			}
-			retval[psData.Service] = status
+			retval[ps.Service] = status
 		}
 	}
 
@@ -138,29 +136,82 @@ func GetStatus(projectDir string, all bool, services ...string) (map[string]Serv
 }
 
 func GetStatusExt(projectDir string, all bool, services ...string) (map[string]ExtendedPSData, error) {
-	args := []string{"ps", "--format", "json"}
-	if all {
-		args = append(args, "-a")
-	}
-	args = append(args, services...)
-	cmd := exec.Command("docker", append([]string{"compose"}, args...)...)
-	cmd.Dir = projectDir
-
-	out, err := doExec(cmd)
+	project, err := LoadProject(context.Background(), projectDir)
 	if err != nil {
 		return nil, err
 	}
-	outputStrs := strings.Split(out.String(), "\n")
+
+	apiClient := getAPI()
+	psSummary, err := apiClient.Ps(context.Background(), project.Name, api.PsOptions{
+		Project:  project.Project,
+		Services: services,
+		All:      all,
+	})
+	if err != nil {
+		return nil, err
+	}
+	now := time.Now()
 	retval := map[string]ExtendedPSData{}
-	for _, outputStr := range outputStrs {
-		if outputStr == "" {
-			continue
+	for _, ps := range psSummary {
+		createdAt := time.Unix(ps.Created, 0)
+
+		var runningFor string
+		switch ps.State {
+		case "running":
+			duration := now.Sub(createdAt).Round(time.Second)
+			runningFor = fmt.Sprintf("Up %s", formatDurationHuman(duration))
+		case "exited", "dead":
+			duration := now.Sub(createdAt).Round(time.Second)
+			runningFor = fmt.Sprintf("Exited (%d) %s ago", ps.ExitCode, formatDurationHuman(duration))
+		default:
+			runningFor = ps.Status // fallback to raw status if weird state
 		}
-		psData := ExtendedPSData{}
-		if err := json.Unmarshal([]byte(outputStr), &psData); err != nil {
-			return nil, err
+		var labels string
+		for k, v := range ps.Labels {
+			labels += fmt.Sprintf("%s=%s,", k, v)
 		}
-		retval[psData.Service] = psData
+		retval[ps.Service] = ExtendedPSData{
+			ExpectedPSData: ExpectedPSData{
+				ID:         ps.ID,
+				Name:       ps.Name,
+				Service:    ps.Service,
+				CreatedAt:  createdAt.Format(time.DateTime),
+				Image:      ps.Image,
+				Status:     ps.Status,
+				State:      ps.State,
+				Size:       "0B (not available)",
+				RunningFor: runningFor,
+				ExitCode:   ps.ExitCode,
+			},
+			ID:     ps.ID,
+			Labels: labels,
+		}
+
 	}
 	return retval, nil
+}
+
+func formatDurationHuman(d time.Duration) string {
+	if d < time.Minute {
+		return "less than a minute"
+	}
+	if d < time.Hour {
+		mins := int(d.Minutes())
+		if mins == 1 {
+			return "1 minute"
+		}
+		return fmt.Sprintf("%d minutes", mins)
+	}
+	if d < 24*time.Hour {
+		hours := int(d.Hours())
+		if hours == 1 {
+			return "about an hour"
+		}
+		return fmt.Sprintf("%d hours", hours)
+	}
+	days := int(d.Hours() / 24)
+	if days == 1 {
+		return "1 day"
+	}
+	return fmt.Sprintf("%d days", days)
 }
