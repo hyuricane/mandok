@@ -358,14 +358,13 @@ func setEnvs(c echo.Context) error {
 	for _, v := range newEnvVals {
 		if i, ok := exists[v.Key]; ok {
 			envVals[i].Val = v.Val
-			envVals[i].Secret = v.Secret
 		} else {
 			envVals = append(envVals, v)
 		}
 	}
 
 	// write to env files
-	err = compose.WriteEnvFile(projectDir, envVals)
+	err = compose.WriteEnvFile(projectDir, envVals, nil)
 	if err != nil {
 		return c.JSON(500, map[string]string{
 			"message": err.Error(),
@@ -417,7 +416,7 @@ func deleteEnv(c echo.Context) error {
 	if i, ok := exists[envname]; ok {
 		envVals = append(envVals[:i], envVals[i+1:]...)
 	}
-	err = compose.WriteEnvFile(projectDir, envVals)
+	err = compose.WriteEnvFile(projectDir, envVals, nil)
 	if err != nil {
 		return c.JSON(500, map[string]string{
 			"message": err.Error(),

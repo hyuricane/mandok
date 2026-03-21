@@ -4,29 +4,22 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"log"
 	"os"
 	"path/filepath"
-	"strings"
 
-	"github.com/containerd/continuity/fs"
+	"github.com/joho/godotenv"
 )
 
 type EnvVal struct {
-	Key    string `json:"key"`
-	Val    string `json:"val"`
-	Secret bool   `json:"secret"`
+	Key string `json:"key"`
+	Val string `json:"val"`
 }
 
 func (ev EnvVal) MarshalJSON() ([]byte, error) {
 	type Alias EnvVal
 	alias := &Alias{
-		Key:    ev.Key,
-		Val:    ev.Val,
-		Secret: ev.Secret,
-	}
-	if ev.Secret {
-		alias.Val = "*****"
+		Key: ev.Key,
+		Val: ev.Val,
 	}
 
 	return json.Marshal(alias)
@@ -42,109 +35,85 @@ func TryProject(projectDir string, configFileName string, services ...string) er
 }
 
 func ReadEnvFile(projectDir string, masked bool) (vals []EnvVal, err error) {
-	fileName := ".env"
+	fileNames := []string{filepath.Join(projectDir, ".env")}
 	if masked {
-		fileName = "masked.env"
+		fileNames = append(fileNames, filepath.Join(projectDir, "masked.env"))
 	}
-	payload, err := os.ReadFile(filepath.Join(projectDir, fileName))
-	if os.IsNotExist((err)) {
-		var f *os.File
-		_, err = os.Create(filepath.Join(projectDir, fileName))
-		if err != nil {
-			return nil, err
-		}
-		f.Close()
-		payload, err = os.ReadFile(filepath.Join(projectDir, fileName))
-	}
-	vals = []EnvVal{}
+	envvals, err := godotenv.Read(fileNames...)
 	if err != nil {
-		log.Printf("[DEBUG] read %s error: %v", filepath.Join(projectDir, fileName), err)
-		log.Printf("[DEBUG] isMasked %t", masked)
-		if os.IsNotExist(err) {
-			if masked { // just copy .env file
-				log.Printf("[DEBUG] try read %s", filepath.Join(projectDir, ".env"))
-				if _, err1 := os.Stat(filepath.Join(projectDir, ".env")); err1 != nil {
-					log.Printf("[DEBUG] read %s error: %v", filepath.Join(projectDir, ".env"), err1)
-					return vals, err1
-				}
-				log.Printf("[DEBUG] can read %s", filepath.Join(projectDir, ".env"))
-				err = fs.CopyFile(filepath.Join(projectDir, fileName), filepath.Join(projectDir, ".env"))
-				if err != nil {
-					return vals, nil
-				}
-				return ReadEnvFile(projectDir, masked)
-			}
-			return vals, nil
-		}
 		return nil, err
 	}
-	vals, err = ReadEnvsFromBytes(payload)
-
-	return
-}
-
-func ReadEnvsFromBytes(payload []byte) ([]EnvVal, error) {
-	vals := []EnvVal{}
-	lines := bytes.Split(payload, []byte("\n"))
-	/**
-	the format is
-	KEYPLAIN_KEY1=PLAIN_VAL1
-	### secret
-	SECRET_KEY=SECRET_VAL
-	PLAIN_KEY2=PLAIN_VAL2
-	**/
-	isSecret := false
-	for _, bline := range lines {
-		if len(bline) == 0 {
-			continue
-		}
-		line := strings.TrimSpace(string(bline))
-		if line == "### secret" {
-			isSecret = true
-			continue
-		}
-		if strings.HasPrefix(line, "#") {
-			isSecret = false
-			continue
-		}
-		parts := strings.Split(line, "=")
+	for k, v := range envvals {
 		vals = append(vals, EnvVal{
-			Key:    string(parts[0]),
-			Val:    string(parts[1]),
-			Secret: isSecret,
+			Key: k,
+			Val: v,
 		})
-		isSecret = false
 	}
 	return vals, nil
 }
 
-func WriteEnvFile(projectDir string, vals []EnvVal) error {
-	realBs := bytes.Buffer{}
-	maskedBs := bytes.Buffer{}
-	for _, v := range vals {
-		if v.Secret {
-			realBs.WriteString("### secret\n")
-			maskedBs.WriteString("### secret\n")
-		}
-		realBs.WriteString(v.Key)
-		realBs.WriteString("=")
-		realBs.WriteString(v.Val)
-		realBs.WriteString("\n")
-
-		maskedBs.WriteString(v.Key)
-		if v.Secret {
-			maskedBs.WriteString("=******\n")
-		} else {
-			maskedBs.WriteString("=")
-			maskedBs.WriteString(v.Val)
-			maskedBs.WriteString("\n")
-		}
+func GetExistingSecretsEnvs(projectDir string) (map[string]bool, error) {
+	secretEnvs, err := godotenv.Read(filepath.Join(projectDir, "masked.env"))
+	if err != nil {
+		return nil, err
 	}
-	err := os.WriteFile(filepath.Join(projectDir, ".env"), realBs.Bytes(), 0644)
+	secrets := make(map[string]bool)
+	for k := range secretEnvs {
+		secrets[k] = true
+	}
+	return secrets, nil
+}
+
+func SetEnvSecret(projectDir string, key string, secret bool) error {
+	envs, err := ReadEnvFile(projectDir, false)
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(filepath.Join(projectDir, "masked.env"), maskedBs.Bytes(), 0644)
+	secrets, err := GetExistingSecretsEnvs(projectDir)
+	if err != nil {
+		return err
+	}
+	secrets[key] = secret
+	return WriteEnvFile(projectDir, envs, secrets)
+}
+
+func ReadEnvsFromBytes(payload []byte) ([]EnvVal, error) {
+	vals := []EnvVal{}
+	envvals, err := godotenv.Parse(bytes.NewReader(payload))
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range envvals {
+		vals = append(vals, EnvVal{
+			Key: k,
+			Val: v,
+		})
+	}
+	return vals, nil
+}
+
+func WriteEnvFile(projectDir string, vals []EnvVal, secrets map[string]bool) error {
+	envmapPlain := make(map[string]string)
+	envmapMasked := make(map[string]string)
+	for _, v := range vals {
+		envmapPlain[v.Key] = v.Val
+		if secrets[v.Key] {
+			envmapMasked[v.Key] = "******"
+		}
+	}
+	payloadPlain, err := godotenv.Marshal(envmapPlain)
+	if err != nil {
+		return err
+	}
+	payloadMasked, err := godotenv.Marshal(envmapMasked)
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(filepath.Join(projectDir, ".env"), []byte(payloadPlain), 0644)
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(filepath.Join(projectDir, "masked.env"), []byte(payloadMasked), 0644)
 	if err != nil {
 		return err
 	}

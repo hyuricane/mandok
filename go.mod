@@ -7,7 +7,6 @@ go 1.24.9
 require (
 	github.com/a-h/templ v0.3.1001
 	github.com/compose-spec/compose-go/v2 v2.9.1
-	github.com/containerd/continuity v0.4.5
 	github.com/docker/cli v28.5.1+incompatible
 	github.com/docker/compose/v2 v2.40.3
 	github.com/golang-jwt/jwt/v5 v5.2.2
@@ -48,6 +47,7 @@ require (
 	github.com/containerd/console v1.0.5 // indirect
 	github.com/containerd/containerd/api v1.9.0 // indirect
 	github.com/containerd/containerd/v2 v2.1.4 // indirect
+	github.com/containerd/continuity v0.4.5 // indirect
 	github.com/containerd/errdefs v1.0.0 // indirect
 	github.com/containerd/errdefs/pkg v0.3.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect

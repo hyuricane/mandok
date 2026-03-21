@@ -104,7 +104,7 @@ func GetProject(projectDir string, nointerpolate ...bool) (*ComposeProjectYaml, 
 	ctx := context.Background()
 	project, err := LoadProject(ctx, projectDir, LoadProjectOptions{
 		NoInference: len(nointerpolate) > 0 && nointerpolate[0],
-		EnvFiles:    []string{"masked.env"},
+		EnvFiles:    []string{".env", "masked.env"},
 	})
 	if err != nil {
 		return nil, err

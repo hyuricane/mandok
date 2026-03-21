@@ -10,7 +10,7 @@ func GetService(projectDir string, service string, noInference ...bool) (map[str
 	ctx := context.Background()
 	project, err := LoadProject(ctx, projectDir, LoadProjectOptions{
 		NoInference: len(noInference) > 0 && noInference[0],
-		EnvFiles:    []string{"masked.env"},
+		EnvFiles:    []string{".env", "masked.env"},
 	})
 	if err != nil {
 		return nil, err

@@ -1,8 +1,6 @@
 package ax
 
 import (
-	"path"
-
 	"github.com/labstack/echo/v4"
 	"inovasiriset.co.id/docker/manager/app/lib/compose"
 	"inovasiriset.co.id/docker/manager/web/templates/axs/components"
@@ -59,36 +57,30 @@ func setEnv(c echo.Context) error {
 	if err != nil {
 		return components.Envs(projectName, nil, err).Render(c.Request().Context(), c.Response().Writer)
 	}
-	exists := map[string]int{}
-	for i, v := range envVals {
-		exists[v.Key] = i
+	secrets, err := compose.GetExistingSecretsEnvs(projectDir)
+	if err != nil {
+		return components.Envs(projectName, nil, err).Render(c.Request().Context(), c.Response().Writer)
 	}
-	if envs != "" {
+
+	if name != "" {
+		envVals = append(envVals, compose.EnvVal{
+			Key: name,
+			Val: value,
+		})
+	}
+	if len(envs) > 0 {
 		newEnvVals, err := compose.ReadEnvsFromBytes([]byte(envs))
 		if err != nil {
-			return err
+			return components.Envs(projectName, nil, err).Render(c.Request().Context(), c.Response().Writer)
 		}
-		for _, v := range newEnvVals {
-			if i, ok := exists[v.Key]; ok { // exists
-				envVals[i] = v
-			} else {
-				envVals = append(envVals, v)
-			}
-		}
+		envVals = append(envVals, newEnvVals...)
 	}
-	if name != "" {
-		if i, ok := exists[name]; ok {
-			envVals[i].Val = value
-			envVals[i].Secret = path.Base(c.Path()) != "plain"
-		} else {
-			envVals = append(envVals, compose.EnvVal{
-				Key:    name,
-				Val:    value,
-				Secret: path.Base(c.Path()) != "plain",
-			})
-		}
+
+	err = compose.WriteEnvFile(projectDir, envVals, secrets)
+	if err != nil {
+		return components.Envs(projectName, nil, err).Render(c.Request().Context(), c.Response().Writer)
 	}
-	err = compose.WriteEnvFile(projectDir, envVals)
+
 	maskedEnvVals, _ := compose.ReadEnvFile(projectDir, true)
 	if err != nil {
 		return components.Envs(projectName, maskedEnvVals, err).Render(c.Request().Context(), c.Response().Writer)
@@ -103,18 +95,7 @@ func setEnvSecret(c echo.Context) error {
 	if projectDir == "" {
 		return c.Redirect(302, "/ax/")
 	}
-	envVals, err := compose.ReadEnvFile(projectDir, false)
-	if err != nil {
-		return components.Envs(projectName, nil, err).Render(c.Request().Context(), c.Response().Writer)
-	}
-	exists := map[string]int{}
-	for i, v := range envVals {
-		exists[v.Key] = i
-	}
-	if i, ok := exists[name]; ok {
-		envVals[i].Secret = true
-	}
-	err = compose.WriteEnvFile(projectDir, envVals)
+	err := compose.SetEnvSecret(projectDir, name, true)
 	maskedEnvVals, _ := compose.ReadEnvFile(projectDir, true)
 	if err != nil {
 		return components.Envs(projectName, maskedEnvVals, err).Render(c.Request().Context(), c.Response().Writer)
@@ -140,7 +121,7 @@ func deleteEnv(c echo.Context) error {
 	if i, ok := exists[name]; ok {
 		envVals = append(envVals[:i], envVals[i+1:]...)
 	}
-	err = compose.WriteEnvFile(projectDir, envVals)
+	err = compose.WriteEnvFile(projectDir, envVals, nil)
 	maskedEnvVals, _ := compose.ReadEnvFile(projectDir, true)
 	if err != nil {
 		return components.Envs(projectName, maskedEnvVals, err).Render(c.Request().Context(), c.Response().Writer)

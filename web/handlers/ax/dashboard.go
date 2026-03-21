@@ -45,8 +45,6 @@ func RouteDashboard(group *echo.Group) {
 	projectGroup.POST("/:project/route/:service", doEditRoute)
 
 	projectGroup.GET("/:project/envs", envs)
-	projectGroup.POST("/:project/envs/plain", setEnv)
-	projectGroup.POST("/:project/envs/secret", setEnv)
 	projectGroup.POST("/:project/envs", setEnv)
 	projectGroup.GET("/:project/envs/secret/:name", setEnvSecret)
 	projectGroup.GET("/:project/envs/delete/:name", deleteEnv)

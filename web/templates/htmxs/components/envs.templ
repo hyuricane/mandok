@@ -4,7 +4,7 @@ import "path"
 import "inovasiriset.co.id/docker/manager/app/lib/compose"
 
 templ Envs(projectName string, envVals []compose.EnvVal, err error) {
-	<div id="project-envs" hx-get={path.Join("/hx", "project", projectName, "envs")} hx-swap-oob="outerHTML" hx-trigger="updateEnvs from:body" hx-indicator="#page-load-indicator" class="p-4">
+	<div id="project-envs" hx-get={ path.Join("/hx", "project", projectName, "envs") } hx-swap-oob="outerHTML" hx-trigger="updateEnvs from:body" hx-indicator="#page-load-indicator" class="p-4">
 		<h2 class="text-2xl font-bold mb-4">Envs</h2>
 		<table class="min-w-full divide-y divide-gray-200">
 			<thead>
@@ -17,21 +17,21 @@ templ Envs(projectName string, envVals []compose.EnvVal, err error) {
 			<tbody>
 				for _, v := range envVals {
 					<tr class="hover:bg-gray-100">
-						<td class="px-6 py-2">{v.Key}</td>
-						<td class="px-6 py-2">{v.Val}</td>
+						<td class="px-6 py-2">{ v.Key }</td>
+						<td class="px-6 py-2">{ v.Val }</td>
 						<td class="px-6 py-2 whitespace-nowrap">
-							<a href={templ.SafeURL(path.Join("/hx", "project", projectName, "envs", "delete", v.Key))} hx-get={path.Join("/hx", "project", projectName, "envs", "delete", v.Key)} hx-confirm={"delete " + v.Key +" env var?"} hx-swap="none" class="text-red-500 hover:underline mr-2">delete</a>
-							<a href={templ.SafeURL(path.Join("/hx", "project", projectName, "envs", "secret", v.Key))} hx-get={path.Join("/hx", "project", projectName, "envs", "secret", v.Key)} hx-confirm={"make " + v.Key + " env var secret?"} hx-swap="none" class="text-blue-500 hover:underline">secret</a>
+							<a href={ templ.SafeURL(path.Join("/hx", "project", projectName, "envs", "delete", v.Key)) } hx-get={ path.Join("/hx", "project", projectName, "envs", "delete", v.Key) } hx-confirm={ "delete " + v.Key + " env var?" } hx-swap="none" class="text-red-500 hover:underline mr-2">delete</a>
+							<a href={ templ.SafeURL(path.Join("/hx", "project", projectName, "envs", "secret", v.Key)) } hx-get={ path.Join("/hx", "project", projectName, "envs", "secret", v.Key) } hx-confirm={ "make " + v.Key + " env var secret?" } hx-swap="none" class="text-blue-500 hover:underline">secret</a>
 						</td>
 					</tr>
 				}
 			</tbody>
 			<tfoot>
 				<tr id="add-env-plain" hx-include="#add-env-plain>td>input" class="hover:bg-gray-100">
-					<td class="px-6 py-4 whitespace-nowrap"><input name="name" class="border rounded px-2 py-1 w-full" /></td>
-					<td class="px-6 py-4 whitespace-nowrap"><input name="value" class="border rounded px-2 py-1 w-full" /></td>
+					<td class="px-6 py-4 whitespace-nowrap"><input name="name" class="border rounded px-2 py-1 w-full"/></td>
+					<td class="px-6 py-4 whitespace-nowrap"><input name="value" class="border rounded px-2 py-1 w-full"/></td>
 					<td class="px-6 py-4 whitespace-nowrap">
-						<button type="button" hx-post={path.Join("/hx", "project", projectName, "envs", "plain")} hx-swap="none" hx-indicator="#page-load-indicator" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">+</button>
+						<button type="button" hx-post={ path.Join("/hx", "project", projectName, "envs") } hx-swap="none" hx-indicator="#page-load-indicator" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">+</button>
 					</td>
 				</tr>
 			</tfoot>

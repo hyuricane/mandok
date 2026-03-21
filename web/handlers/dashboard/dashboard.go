@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"path"
 	"strconv"
 	"time"
 
@@ -418,38 +417,26 @@ func setEnv(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	exists := map[string]int{}
-	for i, v := range envVals {
-		exists[v.Key] = i
+	secrets, err := compose.GetExistingSecretsEnvs(projectDir)
+	if err != nil {
+		return err
 	}
 
-	if envs != "" {
+	if name != "" {
+		envVals = append(envVals, compose.EnvVal{
+			Key: name,
+			Val: value,
+		})
+	}
+	if len(envs) > 0 {
 		newEnvVals, err := compose.ReadEnvsFromBytes([]byte(envs))
 		if err != nil {
 			return err
 		}
-		for _, v := range newEnvVals {
-			if i, ok := exists[v.Key]; ok { // exists
-				envVals[i] = v
-			} else {
-				envVals = append(envVals, v)
-			}
-		}
-	}
-	if name != "" {
-		if i, ok := exists[name]; ok {
-			envVals[i].Val = value
-			envVals[i].Secret = path.Base(c.Path()) != "plain"
-		} else {
-			envVals = append(envVals, compose.EnvVal{
-				Key:    name,
-				Val:    value,
-				Secret: path.Base(c.Path()) != "plain",
-			})
-		}
+		envVals = append(envVals, newEnvVals...)
 	}
 
-	err = compose.WriteEnvFile(projectDir, envVals)
+	err = compose.WriteEnvFile(projectDir, envVals, secrets)
 	if err != nil {
 		return err
 	}
@@ -463,18 +450,7 @@ func setEnvSecret(c echo.Context) error {
 	if projectDir == "" {
 		return c.Redirect(302, "/")
 	}
-	envVals, err := compose.ReadEnvFile(projectDir, false)
-	if err != nil {
-		return err
-	}
-	exists := map[string]int{}
-	for i, v := range envVals {
-		exists[v.Key] = i
-	}
-	if i, ok := exists[name]; ok {
-		envVals[i].Secret = true
-	}
-	err = compose.WriteEnvFile(projectDir, envVals)
+	err := compose.SetEnvSecret(projectDir, name, true)
 	if err != nil {
 		return err
 	}
@@ -499,7 +475,7 @@ func deleteEnv(c echo.Context) error {
 	if i, ok := exists[name]; ok {
 		envVals = append(envVals[:i], envVals[i+1:]...)
 	}
-	err = compose.WriteEnvFile(projectDir, envVals)
+	err = compose.WriteEnvFile(projectDir, envVals, nil)
 	if err != nil {
 		return err
 	}

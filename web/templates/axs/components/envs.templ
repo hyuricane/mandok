@@ -53,7 +53,7 @@ templ Envs(projectName string, envVals []compose.EnvVal, err error) {
 									value: $refs.envValueInput.value
 								}, 
 								target: "project-envs",
-							})`, path.Join("/ax", "project", projectName, "envs", "plain")) }
+							})`, path.Join("/ax", "project", projectName, "envs")) }
 							class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
 						>+</button>
 					</td>
