@@ -20,6 +20,7 @@ import (
 func RouteDashboard(group *echo.Group) {
 	group.GET("/login", login)
 	group.POST("/login", doLogin)
+	group.GET("/logout", logout)
 	group.GET("/", dashboard, middlewares.CookieAuth())
 	projectGroup := group.Group("/project")
 	projectGroup.Use(middlewares.CookieAuth())
@@ -507,6 +508,19 @@ func getLog(c echo.Context) error {
 
 func login(c echo.Context) error {
 	return pages.Login(c.QueryParam("username")).Render(c.Request().Context(), c.Response().Writer)
+}
+
+func logout(c echo.Context) error {
+	c.SetCookie(&http.Cookie{
+		Name:     "token",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		Secure:   true,
+		MaxAge:   -1,
+	})
+	return c.Redirect(302, "/")
 }
 
 func doLogin(c echo.Context) error {

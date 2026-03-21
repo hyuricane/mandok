@@ -1,0 +1,10 @@
+{
+  "go.buildFlags": [
+    "-tags=prod"
+  ],
+  "gopls": {
+    "build.buildFlags": [
+      "-tags=prod"
+    ]
+  }
+}

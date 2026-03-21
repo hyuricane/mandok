@@ -22,6 +22,7 @@ func RouteDashboard(group *echo.Group) {
 	group.GET("", dashboard, middlewares.CookieAuth("/hx/login"))
 	group.GET("/login", login)
 	group.POST("/login", doLogin)
+	group.GET("/logout", logout)
 	projectGroup := group.Group("/project")
 	projectGroup.Use(middlewares.CookieAuth("/hx/login"))
 	projectGroup.GET("/:project", project)
@@ -144,16 +145,19 @@ func doEditProject(c echo.Context) error {
 	}
 	payload := c.FormValue("project")
 	newProject := compose.ComposeProjectYaml{}
-	if format == "yaml" {
+	switch format {
+	case "yaml":
 		err := yaml.NewDecoder(bytes.NewBufferString(payload)).Decode(&newProject)
 		if err != nil {
 			return hxPages.EditProject(renderLayout, projectName, string(payload), format, err).Render(c.Request().Context(), c.Response().Writer)
 		}
-	} else if format == "json" {
+	case "json":
 		err := json.NewDecoder(bytes.NewBufferString(payload)).Decode(&newProject)
 		if err != nil {
 			return hxPages.EditProject(renderLayout, projectName, string(payload), format, err).Render(c.Request().Context(), c.Response().Writer)
 		}
+	default:
+		return hxPages.EditProject(renderLayout, projectName, string(payload), format, errors.New("invalid format")).Render(c.Request().Context(), c.Response().Writer)
 	}
 	_, err := compose.CreateProject(projectName, newProject)
 	if err != nil {

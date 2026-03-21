@@ -22,6 +22,7 @@ func RouteDashboard(group *echo.Group) {
 	group.GET("", dashboard, middlewares.CookieAuth("/ax/login"))
 	group.GET("/login", login)
 	group.POST("/login", doLogin)
+	group.GET("/logout", logout)
 	projectGroup := group.Group("/project")
 	projectGroup.Use(middlewares.CookieAuth("/ax/login"))
 	projectGroup.GET("/:project", project)

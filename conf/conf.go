@@ -8,6 +8,8 @@ import (
 	"github.com/joho/godotenv"
 )
 
+var IS_DEBUG = true
+
 type Config struct {
 	ProjectDirs            string
 	Network                string

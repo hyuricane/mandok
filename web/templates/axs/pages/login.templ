@@ -6,7 +6,7 @@ import "inovasiriset.co.id/docker/manager/web/templates/axs/components"
 templ contentLogin(username string, err error) {
 	<title>Login</title>
 	<div id="page" class="container p-4">
-		<form x-target.push="page" method="POST" action="/ax/login" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 w-fit mx-auto">
+		<form x-target.away="_top" x-target.push="page" method="POST" action="/ax/login" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 w-fit mx-auto">
 			<table>
 				<tr>
 					<td>
@@ -37,7 +37,7 @@ templ contentLogin(username string, err error) {
 
 templ Login(layout bool, username string, err error) {
 	if layout {
-		@layouts.AX("Login") {
+		@layouts.AXAuth("Login") {
 			<div id="page" x-sync class="container p-4">
 				@contentLogin(username, err)
 			</div>
