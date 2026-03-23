@@ -11,7 +11,13 @@ import (
 templ contentNewProject(err error) {
 	<title>New Project</title>
 	<h1 class="text-3xl font-bold mb-4">New Project</h1>
-	<form x-target.push="page" method="POST" action="/ax/project-new" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+	<form
+		x-target="page"
+		x-target.push="page"
+		method="POST"
+		action="/ax/project-new"
+		class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4"
+	>
 		<label for="project-name" class="block text-gray-700 text-sm font-bold mb-2">Name: </label>
 		<input id="project-name" name="name" type="text" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required/>
 		<br/>
@@ -53,6 +59,7 @@ templ contentProject(projectName string, err error) {
 		>Down</a>
 		<a
 			href={ templ.SafeURL(path.Join("/ax", "project", projectName, "edit")) }
+			x-target="page"
 			x-target.push="page"
 			class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
 		>Edit</a>
@@ -109,6 +116,7 @@ templ contentEditProject(projectName, project, format string, err error) {
 	<title>{ projectName }: Edit Raw - { format }</title>
 	<h1 class="text-3xl font-bold mb-4">Edit Project: { projectName }</h1>
 	<form
+		x-target="page"
 		x-target.push="page"
 		method="POST"
 		x-data={ "{ format: '" + format + "', value: " + quotedProject + " }" }

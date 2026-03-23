@@ -45,6 +45,7 @@ templ contentService(projectName, serviceName string, service string, format str
 		}
 	}}
 	<form
+		x-target="page"
 		x-target.push="page"
 		method="POST"
 		x-data={ "{ format: '" + format + "', value: " + quotedService + " }" }

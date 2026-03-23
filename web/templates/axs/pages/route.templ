@@ -11,7 +11,12 @@ templ contentRoute(projectName, serviceName string, route compose.ServiceRoute, 
 	<title>Edit Route: { serviceName }</title>
 	<div id="page" x-sync class="container p-4">
 		<h1 class="text-3xl font-bold mb-4">Edit Project: { projectName }</h1>
-		<form x-target.push="page" method="POST" action={ templ.SafeURL(path.Join("/ax", "project", projectName, "route", serviceName)) }>
+		<form
+			x-target="page"
+			x-target.push="page"
+			method="POST"
+			action={ templ.SafeURL(path.Join("/ax", "project", projectName, "route", serviceName)) }
+		>
 			if err != nil {
 				<br/>
 				<span style="color: red;">{ err.Error() }</span>

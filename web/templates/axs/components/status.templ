@@ -32,12 +32,14 @@ templ Statuses(projectName string, projectStats map[string]compose.ServiceStatus
 								<a href={ templ.SafeURL("//" + v.Route) } target="_blank" class="text-blue-500 hover:underline">{ v.Route }</a> | 
 								<a
 									href={ templ.SafeURL(path.Join("/ax", "project", projectName, "route", n)) }
+									x-target="page"
 									x-target.push="page"
 									class="text-blue-500 hover:underline mr-2"
 								>Edit</a>
 							} else {
 								<a
 									href={ templ.SafeURL(path.Join("/ax", "project", projectName, "route", n)) }
+									x-target="page"
 									x-target.push="page"
 									class="text-blue-500 hover:underline mr-2"
 								>Add Route</a>
@@ -46,6 +48,7 @@ templ Statuses(projectName string, projectStats map[string]compose.ServiceStatus
 						<td class="px-6 py-2 whitespace-nowrap">
 							<a
 								href={ templ.SafeURL(path.Join("/ax", "project", projectName, "service", n, "edit")) }
+								x-target="page"
 								x-target.push="page"
 								class="text-blue-500 hover:underline mr-2"
 							>Edit</a>
@@ -96,6 +99,7 @@ templ Statuses(projectName string, projectStats map[string]compose.ServiceStatus
 					<td colspan="6" class="px-6 py-4 whitespace-nowrap">
 						<a
 							href={ templ.SafeURL(path.Join("/ax", "project", projectName, "service-new")) }
+							x-target="page"
 							x-target.push="page"
 							class="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
 						>New Service</a>

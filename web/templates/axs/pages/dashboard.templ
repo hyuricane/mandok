@@ -14,6 +14,7 @@ templ contentDashboard(projects []string, err error) {
 				<li>
 					<a
 						href={ templ.SafeURL(path.Join("/ax", "project", p)) }
+						x-target="page"
 						x-target.push="page"
 						class="text-blue-500 hover:underline"
 					>{ p }</a>
@@ -22,6 +23,7 @@ templ contentDashboard(projects []string, err error) {
 		</ul>
 		<a
 			href="/ax/project-new"
+			x-target="page"
 			x-target.push="page"
 			class="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
 		>
