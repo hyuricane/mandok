@@ -77,15 +77,8 @@ func setEnv(c echo.Context) error {
 	}
 
 	err = compose.WriteEnvFile(projectDir, envVals, secrets)
-	if err != nil {
-		return components.Envs(projectName, nil, err).Render(c.Request().Context(), c.Response().Writer)
-	}
-
 	maskedEnvVals, _ := compose.ReadEnvFile(projectDir, true)
-	if err != nil {
-		return components.Envs(projectName, maskedEnvVals, err).Render(c.Request().Context(), c.Response().Writer)
-	}
-	return components.Envs(projectName, maskedEnvVals, nil).Render(c.Request().Context(), c.Response().Writer)
+	return components.Envs(projectName, maskedEnvVals, err).Render(c.Request().Context(), c.Response().Writer)
 }
 
 func setEnvSecret(c echo.Context) error {
@@ -97,10 +90,7 @@ func setEnvSecret(c echo.Context) error {
 	}
 	err := compose.SetEnvSecret(projectDir, name, true)
 	maskedEnvVals, _ := compose.ReadEnvFile(projectDir, true)
-	if err != nil {
-		return components.Envs(projectName, maskedEnvVals, err).Render(c.Request().Context(), c.Response().Writer)
-	}
-	return components.Envs(projectName, maskedEnvVals, nil).Render(c.Request().Context(), c.Response().Writer)
+	return components.Envs(projectName, maskedEnvVals, err).Render(c.Request().Context(), c.Response().Writer)
 }
 
 func deleteEnv(c echo.Context) error {
@@ -123,8 +113,5 @@ func deleteEnv(c echo.Context) error {
 	}
 	err = compose.WriteEnvFile(projectDir, envVals, nil)
 	maskedEnvVals, _ := compose.ReadEnvFile(projectDir, true)
-	if err != nil {
-		return components.Envs(projectName, maskedEnvVals, err).Render(c.Request().Context(), c.Response().Writer)
-	}
-	return components.Envs(projectName, maskedEnvVals, nil).Render(c.Request().Context(), c.Response().Writer)
+	return components.Envs(projectName, maskedEnvVals, err).Render(c.Request().Context(), c.Response().Writer)
 }

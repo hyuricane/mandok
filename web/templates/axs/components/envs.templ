@@ -4,9 +4,17 @@ import (
 	"fmt"
 	"inovasiriset.co.id/docker/manager/app/lib/compose"
 	"path"
+	"sort"
 )
 
+func sortEnvVals(envVals []compose.EnvVal) {
+	sort.Slice(envVals, func(i, j int) bool {
+		return envVals[i].Key < envVals[j].Key
+	})
+}
+
 templ Envs(projectName string, envVals []compose.EnvVal, err error) {
+	{{ sortEnvVals(envVals) }}
 	<div id="project-envs" class="p-4 overflow-x-auto">
 		<h2 class="text-2xl font-bold mb-4">Envs</h2>
 		<table class="w-full divide-y divide-gray-200 table-fixed">
