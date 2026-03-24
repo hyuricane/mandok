@@ -183,7 +183,6 @@ func LoadProject(ctx context.Context, projectDir string, options ...LoadProjectO
 		projectOptionsFns = append(projectOptionsFns,
 			cli.WithEnvFiles(
 				filepath.Join(projectDirAbs, ".env"),
-				filepath.Join(projectDirAbs, "masked.env"),
 				filepath.Join(projectDirAbs, "tags.env"),
 			),
 			cli.WithDotEnv,
@@ -194,6 +193,7 @@ func LoadProject(ctx context.Context, projectDir string, options ...LoadProjectO
 		projectOptionsFns = append(projectOptionsFns,
 			cli.WithEnvFiles(
 				filepath.Join(projectDirAbs, ".env"),
+				filepath.Join(projectDirAbs, "masked.env"),
 				filepath.Join(projectDirAbs, "tags.env"),
 			),
 			cli.WithInterpolation(false),

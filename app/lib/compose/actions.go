@@ -36,6 +36,7 @@ func StartProject(projectDir string, forceRecreate bool, pull bool, services ...
 			Services:      services,
 			RemoveOrphans: true,
 			AssumeYes:     true,
+			Inherit:       true,
 		},
 		Start: api.StartOptions{
 			Services: services,
