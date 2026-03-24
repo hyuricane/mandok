@@ -98,13 +98,13 @@ func HasProject(name string) string {
 
 func GetProject(projectDir string, nointerpolate ...bool) (*ComposeProjectYaml, error) {
 	// make sure masked.env exists
-	if _, err := os.Stat(path.Join(projectDir, "masked.env")); err != nil && os.IsNotExist(err) {
-		ReadEnvFile(projectDir, true) // this will create masked.env if necessary
+	_, err := ReadEnvFile(projectDir, true)
+	if err != nil {
+		return nil, err
 	}
 	ctx := context.Background()
 	project, err := LoadProject(ctx, projectDir, LoadProjectOptions{
 		NoInference: len(nointerpolate) > 0 && nointerpolate[0],
-		EnvFiles:    []string{".env", "masked.env"},
 	})
 	if err != nil {
 		return nil, err
@@ -114,23 +114,6 @@ func GetProject(projectDir string, nointerpolate ...bool) (*ComposeProjectYaml, 
 	if err != nil {
 		return nil, err
 	}
-	// // go to project directory and trigger docker compose up
-	// args := []string{"--env-file", "masked.env", "config", "--format", "json", "--no-path-resolution"}
-	// if len(nointerpolate) > 0 && nointerpolate[0] {
-	// 	args = []string{"config", "--format", "json", "--no-interpolate", "--no-path-resolution"}
-	// }
-	// cmdName := conf.AppConfig.DockerComposeCmdName
-	// cmdNameSplit := strings.Split(cmdName, " ")
-	// cmd := exec.Command(cmdNameSplit[0], append(cmdNameSplit[1:], args...)...)
-	// cmd.Dir = projectDir
-	// out, err := doExec(cmd)
-	// if err != nil {
-	// 	return nil, NewComposeError(bytes.NewBufferString(err.Error()))
-	// }
-	// if out == nil {
-	// 	return nil, nil
-	// }
-	// convert configModel to ComposeProjectYaml
 	prj := ComposeProjectYaml{}
 	prj.Name = project.Name
 	prj.Version, _ = configModel["version"].(string)
@@ -145,45 +128,6 @@ func GetProject(projectDir string, nointerpolate ...bool) (*ComposeProjectYaml, 
 			}
 		}
 	}
-	// if len(nointerpolate) > 0 && nointerpolate[0] { // handle no interpolate volume problem
-	// 	interpolatedPrj, err := GetProject(projectDir)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	prj.Volumes = handleNonIntepolatedVolumeMap(prj.Volumes, interpolatedPrj.Volumes)
-	// 	for name, svc := range prj.Services {
-	// 		ivols, ok := svc["volumes"]
-	// 		if !ok {
-	// 			continue
-	// 		}
-	// 		interpolatedISvc, ok := interpolatedPrj.Services[name]
-	// 		if !ok {
-	// 			continue
-	// 		}
-	// 		interpolatedIVols, ok := interpolatedISvc["volumes"]
-	// 		if !ok {
-	// 			continue
-	// 		}
-	// 		switch vols := ivols.(type) {
-	// 		case map[string]interface{}:
-	// 			interpolatedVols, ok := interpolatedIVols.(map[string]interface{})
-	// 			if !ok {
-	// 				continue
-	// 			}
-	// 			vols = handleNonIntepolatedVolumeMap(vols, interpolatedVols)
-	// 			svc["volumes"] = vols
-	// 			prj.Services[name] = svc
-	// 		case []interface{}:
-	// 			interpolatedVols, ok := interpolatedIVols.([]interface{})
-	// 			if !ok {
-	// 				continue
-	// 			}
-	// 			vols = handleNonIntepolatedVolumeSlice(vols, interpolatedVols)
-	// 			svc["volumes"] = vols
-	// 			prj.Services[name] = svc
-	// 		}
-	// 	}
-	// }
 	return &prj, nil
 }
 

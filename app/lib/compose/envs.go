@@ -39,6 +39,11 @@ func ReadEnvFile(projectDir string, masked bool) (vals []EnvVal, err error) {
 	if masked {
 		fileNames = append(fileNames, filepath.Join(projectDir, "masked.env"))
 	}
+	for _, fileName := range fileNames {
+		if _, err := os.Stat(fileName); err != nil && !os.IsNotExist(err) {
+			os.WriteFile(fileName, []byte{}, 0644)
+		}
+	}
 	envvals, err := godotenv.Read(fileNames...)
 	if err != nil {
 		return nil, err

@@ -41,7 +41,7 @@ type ServiceStatus struct {
 
 func GetStatus(projectDir string, all bool, services ...string) (map[string]ServiceStatus, error) {
 	retval := map[string]ServiceStatus{}
-	prj, err := GetProject(projectDir, true)
+	prj, err := GetProject(projectDir, false)
 	if err != nil {
 		return nil, err
 	}

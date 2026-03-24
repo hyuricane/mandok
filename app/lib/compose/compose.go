@@ -143,7 +143,6 @@ func (p *Project) ConfigModelJson() ([]byte, error) {
 
 type LoadProjectOptions struct {
 	NoInference bool
-	EnvFiles    []string
 	ConfigFiles []string
 }
 
@@ -174,14 +173,12 @@ func LoadProject(ctx context.Context, projectDir string, options ...LoadProjectO
 		cli.WithWorkingDirectory(projectDirAbs),
 	}
 	noInference := false
-	envFiles := []string{}
 	if len(options) > 0 {
 		noInference = options[0].NoInference
-		envFiles = options[0].EnvFiles
 	}
 	if !noInference {
 		projectOptionsFns = append(projectOptionsFns,
-			cli.WithEnvFiles(envFiles...),
+			cli.WithEnvFiles(filepath.Join(projectDirAbs, ".env"), filepath.Join(projectDirAbs, "masked.env")),
 			cli.WithDotEnv,
 			cli.WithDefaultConfigPath,
 			cli.WithInterpolation(true),
