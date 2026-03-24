@@ -176,15 +176,26 @@ func LoadProject(ctx context.Context, projectDir string, options ...LoadProjectO
 	if len(options) > 0 {
 		noInference = options[0].NoInference
 	}
+	if err := EnsureEnvFiles(projectDirAbs); err != nil {
+		return nil, err
+	}
 	if !noInference {
 		projectOptionsFns = append(projectOptionsFns,
-			cli.WithEnvFiles(filepath.Join(projectDirAbs, ".env"), filepath.Join(projectDirAbs, "masked.env")),
+			cli.WithEnvFiles(
+				filepath.Join(projectDirAbs, ".env"),
+				filepath.Join(projectDirAbs, "masked.env"),
+				filepath.Join(projectDirAbs, "tags.env"),
+			),
 			cli.WithDotEnv,
 			cli.WithDefaultConfigPath,
 			cli.WithInterpolation(true),
 		)
 	} else {
 		projectOptionsFns = append(projectOptionsFns,
+			cli.WithEnvFiles(
+				filepath.Join(projectDirAbs, ".env"),
+				filepath.Join(projectDirAbs, "tags.env"),
+			),
 			cli.WithInterpolation(false),
 			cli.WithResolvedPaths(false),
 		)

@@ -118,7 +118,7 @@ func RouteService(projectDir string, serviceName string, route ServiceRoute) err
 	if err != nil {
 		return err
 	}
-	projectStatus, err := GetStatus(projectDir, false, serviceName)
+	projectStatus, err := GetStatus(projectDir, serviceName)
 	if err != nil {
 		return err
 	}
@@ -173,7 +173,7 @@ func DeleteRoute(projectDir string, serviceName string) error {
 	if err != nil {
 		return err
 	}
-	projectStatus, err := GetStatus(projectDir, false, serviceName)
+	projectStatus, err := GetStatus(projectDir, serviceName)
 	if err != nil {
 		return err
 	}

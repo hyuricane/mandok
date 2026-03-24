@@ -36,10 +36,6 @@ func status(c echo.Context) error {
 		return components.Statuses(projectName, map[string]compose.ServiceStatus{}, err).Render(c.Request().Context(), c.Response().Writer)
 	}
 
-	statuses, err := compose.GetStatus(projectDir, true)
-	if err != nil {
-		return components.Statuses(projectName, map[string]compose.ServiceStatus{}, err).Render(c.Request().Context(), c.Response().Writer)
-	}
-
-	return components.Statuses(projectName, statuses, nil).Render(c.Request().Context(), c.Response().Writer)
+	statuses, err := compose.GetStatus(projectDir)
+	return components.Statuses(projectName, statuses, err).Render(c.Request().Context(), c.Response().Writer)
 }

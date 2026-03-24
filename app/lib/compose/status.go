@@ -3,8 +3,6 @@ package compose
 import (
 	"context"
 	"fmt"
-	"log"
-	"strconv"
 	"strings"
 	"time"
 
@@ -39,71 +37,86 @@ type ServiceStatus struct {
 	Route    string `json:"Route,omitempty"`
 }
 
-func GetStatus(projectDir string, all bool, services ...string) (map[string]ServiceStatus, error) {
+func GetStatus(projectDir string, services ...string) (map[string]ServiceStatus, error) {
 	retval := map[string]ServiceStatus{}
-	prj, err := GetProject(projectDir, false)
-	if err != nil {
-		return nil, err
-	}
-	for k, v := range prj.Services {
-		ss := ServiceStatus{
-			Name: k,
-		}
-		if imageI, ok := v["image"]; ok {
-			ss.Image = imageI.(string)
-		}
-		if labelsI, ok := v["labels"]; ok {
-			var labels map[string]interface{}
-			switch ls := labelsI.(type) {
-			case map[string]interface{}:
-				labels = ls
-			case []string:
-				labels = map[string]interface{}{}
-				for _, l := range ls {
-					parts := strings.Split(l, "=")
-					if len(parts) != 2 {
-						continue
-					}
-					labels[parts[0]] = parts[1]
-				}
-			default:
-				continue
-			}
-			if len(labels) == 0 {
-				log.Printf("[WARNING] labels is not map[string]interface{} %v", labelsI)
-				continue
-			}
-			if route, ok := labels["traefik.http.routers."+prj.Name+"_"+k+".rule"]; ok {
-				ss.Route = route.(string)
-				ss.Route = strings.TrimPrefix(ss.Route, "Host(`")
-				ss.Route = strings.TrimSuffix(ss.Route, "`)")
-			}
-		}
+	// prj, err := GetProject(projectDir, false)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// for k, v := range prj.Services {
+	// 	ss := ServiceStatus{
+	// 		Name: k,
+	// 	}
+	// 	if imageI, ok := v["image"]; ok {
+	// 		ss.Image = imageI.(string)
+	// 	}
+	// 	if labelsI, ok := v["labels"]; ok {
+	// 		var labels map[string]interface{}
+	// 		switch ls := labelsI.(type) {
+	// 		case map[string]interface{}:
+	// 			labels = ls
+	// 		case []string:
+	// 			labels = map[string]interface{}{}
+	// 			for _, l := range ls {
+	// 				parts := strings.Split(l, "=")
+	// 				if len(parts) != 2 {
+	// 					continue
+	// 				}
+	// 				labels[parts[0]] = parts[1]
+	// 			}
+	// 		default:
+	// 			continue
+	// 		}
+	// 		if len(labels) == 0 {
+	// 			log.Printf("[WARNING] labels is not map[string]interface{} %v", labelsI)
+	// 			continue
+	// 		}
+	// 		if route, ok := labels["traefik.http.routers."+prj.Name+"_"+k+".rule"]; ok {
+	// 			ss.Route = route.(string)
+	// 			ss.Route = strings.TrimPrefix(ss.Route, "Host(`")
+	// 			ss.Route = strings.TrimSuffix(ss.Route, "`)")
+	// 		}
+	// 	}
 
-		if deployI, ok := v["deploy"]; ok {
-			if deployM, ok := deployI.(map[string]interface{}); ok {
-				if replicasI, ok := deployM["replicas"]; ok {
-					switch replicas := replicasI.(type) {
-					case int:
-						ss.Expected = replicas
-					case float64:
-						ss.Expected = int(replicas)
-					case string:
-						ss.Expected, err = strconv.Atoi(replicas)
-						if err != nil {
-							ss.Expected = 1
-						}
-					}
-				}
-			}
-		}
-		retval[k] = ss
-	}
+	// 	if deployI, ok := v["deploy"]; ok {
+	// 		if deployM, ok := deployI.(map[string]interface{}); ok {
+	// 			if replicasI, ok := deployM["replicas"]; ok {
+	// 				switch replicas := replicasI.(type) {
+	// 				case int:
+	// 					ss.Expected = replicas
+	// 				case float64:
+	// 					ss.Expected = int(replicas)
+	// 				case string:
+	// 					ss.Expected, err = strconv.Atoi(replicas)
+	// 					if err != nil {
+	// 						ss.Expected = 1
+	// 					}
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// 	retval[k] = ss
+	// }
 
 	ctx := context.Background()
 	project, err := LoadProject(ctx, projectDir)
 	if err != nil {
 		return nil, err
+	}
+	for k, v := range project.Services {
+		ss := ServiceStatus{
+			Name:  v.Name,
+			Image: v.Image,
+		}
+		if v.Deploy != nil && v.Deploy.Replicas != nil {
+			ss.Expected = int(*v.Deploy.Replicas)
+		}
+		if v.Labels != nil {
+			if route, ok := v.Labels["traefik.http.routers."+project.Name+"_"+k+".rule"]; ok {
+				ss.Route = strings.TrimPrefix(strings.TrimSuffix(route, "`)"), "Host(`")
+			}
+		}
+		retval[k] = ss
 	}
 	psAll := len(services) == 0
 	apiClient := getAPI()
@@ -118,6 +131,7 @@ func GetStatus(projectDir string, all bool, services ...string) (map[string]Serv
 	for _, ps := range psSummary {
 		status, ok := retval[ps.Service]
 		if ok {
+			status.Image = ps.Image
 			if status.Expected == 0 {
 				status.Expected = 1
 			}

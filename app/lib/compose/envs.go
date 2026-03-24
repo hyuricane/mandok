@@ -34,15 +34,25 @@ func TryProject(projectDir string, configFileName string, services ...string) er
 	return err
 }
 
+func EnsureEnvFiles(projectDir string) error {
+	for _, f := range []string{".env", "masked.env", "tags.env"} {
+		p := filepath.Join(projectDir, f)
+		if _, err := os.Stat(p); os.IsNotExist(err) {
+			if err := os.WriteFile(p, []byte{}, 0644); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func ReadEnvFile(projectDir string, masked bool) (vals []EnvVal, err error) {
+	if err := EnsureEnvFiles(projectDir); err != nil {
+		return nil, err
+	}
 	fileNames := []string{filepath.Join(projectDir, ".env")}
 	if masked {
 		fileNames = append(fileNames, filepath.Join(projectDir, "masked.env"))
-	}
-	for _, fileName := range fileNames {
-		if _, err := os.Stat(fileName); err != nil && !os.IsNotExist(err) {
-			os.WriteFile(fileName, []byte{}, 0644)
-		}
 	}
 	envvals, err := godotenv.Read(fileNames...)
 	if err != nil {

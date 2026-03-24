@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
@@ -319,14 +318,14 @@ func RestartContainer(c echo.Context) error {
 			})
 		}
 		if c.Request().Header.Get("X-Image-Tag") != "" {
-			err = updateImageTagEnv(filepath.Join(workdir, ".env"), containerName, c.Request().Header.Get("X-Image-Tag"))
+			err = updateImageTagEnv(filepath.Join(workdir, "tags.env"), containerName, c.Request().Header.Get("X-Image-Tag"))
 			if err != nil {
 				log.Printf("[ERROR] update image tag error: %v", err)
 				return err
 			}
 		}
 		// docker compose command
-		err = restartContainer(workdir, containerName, strings.Split(containers[0].Labels["com.docker.compose.project.config_files"], ",")...)
+		err = restartContainer(workdir, containerName)
 		if err != nil {
 			log.Printf("[ERROR] restart container error: %v", err)
 			return err
@@ -345,7 +344,7 @@ func RestartContainer(c echo.Context) error {
 	})
 }
 
-func getContainers(projectName string, containerName string) ([]types.Container, error) {
+func getContainers(projectName string, containerName string) ([]container.Summary, error) {
 	listFilters := filters.NewArgs()
 	// listFilters.Add("label", "com.docker.compose.project=")
 	listFilters.Add("label", "mandok=visible")
@@ -362,12 +361,12 @@ func getContainers(projectName string, containerName string) ([]types.Container,
 	return dockerCli.ContainerList(context.TODO(), container.ListOptions{Filters: listFilters})
 }
 
-func restartContainer(workdir string, containerName string, configFiles ...string) error {
+func restartContainer(workdir string, containerName string) error {
 	return compose.StartProject(workdir, true, true, containerName)
 }
 
 func updateImageTagEnv(envPath string, containerName string, imageTag string) error {
-	// Append timestamped image tag update to .env file
+	// Append timestamped image tag update to tags.env file
 	timestamp := time.Now().Format("2006-01-02 15:04:05")
 	envLine := fmt.Sprintf("# Updated %s\nIMAGE_TAG_%s=%s\n",
 		timestamp,

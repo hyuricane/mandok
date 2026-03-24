@@ -64,7 +64,7 @@ func project(c echo.Context) error {
 	if projectDir == "" {
 		return c.Redirect(302, "/")
 	}
-	project, err := compose.GetStatus(projectDir, true)
+	project, err := compose.GetStatus(projectDir)
 	if err != nil {
 		log.Printf("[ERROR] compose get status (%s, %t) %v", name, true, err)
 	}

@@ -1,30 +1,27 @@
 @host = {{$dotenv BASE_URL}}/api/docker/containers
 @Auth=Basic {{$dotenv API_USERNAME}}:{{$dotenv API_PASSWORD}}
 
+@project = drgreenhouse
+@service = app
+
 ### get all
 GET {{host}}
 Authorization: {{Auth}}
 
 ### get in project
-GET {{host}}/invent
+GET {{host}}/{{project}}
 Authorization: {{Auth}}
 
 ### get container detail
-GET {{host}}/invent/mitra
+GET {{host}}/{{project}}/{{service}}
 Authorization: {{Auth}}
 
+### restart container
+GET {{host}}/{{project}}/{{service}}/restart
+Authorization: {{Auth}}
 
-### update container compose file : in development
-PUT {{host}}/invent/mitra
+### restart container with image tag
+GET {{host}}/{{project}}/{{service}}/restart
 Authorization: {{Auth}}
 Content-Type: application/json
-
-{
-  "environment": {
-    "HULLA": "HOOPS"
-  }
-}
-
-
-
-
+X-Image-Tag: 82349800

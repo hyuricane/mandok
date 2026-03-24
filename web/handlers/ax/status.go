@@ -18,15 +18,7 @@ func status(c echo.Context) error {
 		c.Response().Header().Add("X-Alpine-Redirect", "/ax/")
 		return c.Redirect(302, "/ax/")
 	}
-	project, err := compose.GetProject(projectDir, true)
-	if err != nil {
-		return components.Statuses(projectName, map[string]compose.ServiceStatus{}, err).Render(c.Request().Context(), c.Response().Writer)
-	}
 
-	if project == nil {
-		return components.Statuses(projectName, map[string]compose.ServiceStatus{}, err).Render(c.Request().Context(), c.Response().Writer)
-	}
-
-	statuses, err := compose.GetStatus(projectDir, true)
+	statuses, err := compose.GetStatus(projectDir)
 	return components.Statuses(projectName, statuses, err).Render(c.Request().Context(), c.Response().Writer)
 }

@@ -148,7 +148,7 @@ func getStatus(c echo.Context) error {
 			continue
 		}
 	}
-	status, err := compose.GetStatus(projectDir, true, services...)
+	status, err := compose.GetStatus(projectDir, services...)
 	if err != nil {
 		return c.JSON(500, map[string]string{
 			"message": err.Error(),
@@ -442,7 +442,7 @@ func getLogs(c echo.Context) error {
 			"message": "project not found",
 		})
 	}
-	statuses, err := compose.GetStatus(projectDir, false, serviceName)
+	statuses, err := compose.GetStatus(projectDir, serviceName)
 	if err != nil {
 		return c.JSON(500, map[string]string{
 			"message": err.Error(),
