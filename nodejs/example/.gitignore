@@ -1,0 +1,6 @@
+node_modules
+dist
+.DS_Store
+
+# Generated workers in public
+public/*.worker.js

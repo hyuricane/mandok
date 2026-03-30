@@ -1,6 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
 #page-load-indicator {
   float: right;
   width: auto;
@@ -9,9 +11,11 @@
   z-index: 0;
   margin-right: 1%;
 }
+
 #page-load-indicator.htmx-indicator.htmx-request {
   opacity: 0.5;
 }
+
 .event {
   display: block;
   font-family: 'Courier New', Courier, monospace;
@@ -20,14 +24,17 @@
   direction: rtl;
   text-align: right;
 }
+
 #events {
   max-width: 200px;
   overflow: visible;
 }
+
 #page {
   margin: 2%;
   z-index: 10;
 }
+
 #breadcrumbs {
   margin: 0 2%;
   z-index: 10;

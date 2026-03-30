@@ -97,6 +97,7 @@ templ ActionButtons(projectName string, serviceName string, state string, popupP
 				Name:   "edit",
 				URL:    path.Join("/ax", "project", projectName, "service", serviceName, "edit"),
 				Target: "page",
+				Push:   true,
 				Icon:   editIcon(),
 			},
 			{

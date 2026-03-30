@@ -26,21 +26,22 @@ templ contentService(projectName, serviceName string, service string, format str
 			format = "json"
 		}
 		quotedService := strconv.Quote(service)
-		var initScript string = "$watch('format', value => $ajax(window.location.href + '?format=' + value, { target: 'page' }));"
+		initScript := `window.onMonacoEditorChange = (v) => { value = v; };
+		$watch('format', async value => {
+			console.log('[DEBUG] format changed', value)
+			await window.initMonacoEditor('service-detail', value, 'service')
+		});
+		`
 		switch format {
 		case "yaml":
 			initScript += `
-			window.initMonacoEditor('service-detail','yaml', ` + quotedService + `).onEndUpdate((e) => {
-				value = window.getMonacoEditor().getValue()
-				console.log('[DEBUG] value', value)
-			});
+			console.log('[DEBUG] load monaco editor for yaml')
+			await window.initMonacoEditor('service-detail','yaml', 'service', ` + quotedService + `)
 			`
 		default:
 			initScript += `
-			window.initMonacoEditor('service-detail','json', ` + quotedService + `).onEndUpdate((e) => {
-				value = window.getMonacoEditor().getValue()
-				console.log('[DEBUG] value', value)
-			});
+			console.log('[DEBUG] load monaco editor for json')
+			await window.initMonacoEditor('service-detail','json', 'service', ` + quotedService + `)
 			`
 		}
 	}}

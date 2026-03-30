@@ -1,0 +1,24 @@
+{
+  "name": "docker-compose-editor",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev:client": "vite",
+    "dev:server": "node server/index.js",
+    "build:workers": "npx esbuild node_modules/monaco-yaml/yaml.worker.js --bundle --outfile=public/yaml.worker.js && npx esbuild node_modules/monaco-editor/esm/vs/language/json/json.worker.js --bundle --outfile=public/json.worker.js && npx esbuild node_modules/monaco-editor/esm/vs/editor/editor.worker.js --bundle --outfile=public/editor.worker.js",
+    "build": "npm run build:workers && vite build",
+    "start": "node server/index.js",
+    "dev": "vite"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "js-yaml": "^4.1.0",
+    "monaco-editor": "^0.50.0",
+    "monaco-yaml": "^5.4.1"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0",
+    "vite-plugin-monaco-editor": "^1.1.0"
+  }
+}

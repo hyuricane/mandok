@@ -95,21 +95,17 @@ templ contentEditProject(projectName, project, format string, err error) {
 			format = "json"
 		}
 		quotedProject := strconv.Quote(project)
-		var initScript string = "$watch('format', value => $ajax(window.location.href + '?format=' + value, { target: 'page' }));"
+		var initScript string = `$watch('format', async value => {
+			await window.initMonacoEditor('project-detail', value, 'docker-compose')
+		});`
 		switch format {
 		case "yaml":
 			initScript += `
-			window.initMonacoEditor('project-detail','yaml', ` + quotedProject + `).onEndUpdate((e) => {
-				value = window.getMonacoEditor().getValue()
-				console.log('[DEBUG] value', value)
-			});
+			window.initMonacoEditor('project-detail','yaml', 'docker-compose', ` + quotedProject + `);
 			`
 		default:
 			initScript += `
-			window.initMonacoEditor('project-detail','json', ` + quotedProject + `).onEndUpdate((e) => {
-				value = window.getMonacoEditor().getValue()
-				console.log('[DEBUG] value', value)
-			});
+			window.initMonacoEditor('project-detail', 'json', 'docker-compose', ` + quotedProject + `);
 			`
 		}
 	}}
@@ -119,7 +115,7 @@ templ contentEditProject(projectName, project, format string, err error) {
 		x-target="page"
 		x-target.push="page"
 		method="POST"
-		x-data={ "{ format: '" + format + "', value: " + quotedProject + " }" }
+		x-data={ "{ format: '" + format + "' }" }
 		x-init={ initScript }
 		action={ templ.SafeURL(path.Join("/ax", "project", projectName, "edit")) }
 	>
@@ -139,7 +135,7 @@ templ contentEditProject(projectName, project, format string, err error) {
 			class="rounded-full border-gray-300 focus:ring-2 focus:ring-blue-300"
 		/>JSON
 		<div id="project-detail" class="h-64 resize-y overflow-y-auto"></div>
-		<input type="hidden" name={ format } x-model="value"/>
+		<input type="hidden" name={ format }/>
 		<br/>
 		<button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">Submit</button>
 	</form>

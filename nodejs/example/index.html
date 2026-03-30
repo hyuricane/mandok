@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Docker Compose Editor</title>
+    <link rel="stylesheet" href="/src/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+</head>
+
+<body class="dark-theme">
+    <div id="app">
+        <header>
+            <div class="logo">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12Z"
+                        stroke="currentColor" stroke-width="2" />
+                    <path d="M7 12H17M7 8H17M7 16H17" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+                <span>Compose Editor</span>
+            </div>
+            <div class="controls">
+                <select id="schema-select" class="select-input">
+                    <option value="docker-compose">Docker Compose</option>
+                    <option value="traefik-static">Traefik Static</option>
+                    <option value="traefik-dynamic">Traefik Dynamic</option>
+                </select>
+                <button id="format-toggle" class="btn secondary">Switch to JSON</button>
+                <button id="save-btn" class="btn primary">Save</button>
+            </div>
+        </header>
+        <main>
+            <div id="editor-container"></div>
+        </main>
+        <footer>
+            <div id="status-bar">
+                <span id="file-type">YAML</span>
+                <span id="validation-status">Validating...</span>
+            </div>
+        </footer>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>
