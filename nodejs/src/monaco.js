@@ -1,16 +1,37 @@
 import * as monaco from 'monaco-editor';
 import { configureMonacoYaml } from 'monaco-yaml';
 import yaml from 'js-yaml';
-import composeSpec from './schemas/compose_spec.json';
-import serviceSpec from './schemas/service_spec.json';
-import traefikSticky from './schemas/traefik-sticky.json';
+import composeSpec from './schemas/compose_spec.deref.json';
+import traefikSticky from './schemas/traefik-sticky.deref.json';
+
+const composeSpecBlob = new Blob([
+  JSON.stringify(composeSpec, null, 2)
+], { type: 'application/json' })
+const composeSpecUri = URL.createObjectURL(composeSpecBlob);
+
+const serviceSpec = {
+  $schema: composeSpec.$schema,
+  $id: composeSpecUri + '#/definitions/service',
+  title: 'Service',
+  definitions: composeSpec.definitions,
+  ...composeSpec.definitions.service,
+}
+
+const serviceSpecBlob = new Blob([
+  JSON.stringify(serviceSpec, null, 2)
+], { type: 'application/json' })
+const serviceSpecUri = URL.createObjectURL(serviceSpecBlob);
+
+const traefikStickyBlob = new Blob([
+  JSON.stringify(traefikSticky, null, 2)
+], { type: 'application/json' })
+const traefikStickyUri = URL.createObjectURL(traefikStickyBlob);
 
 // Define the supported schemas
 /**
  * @typedef {Object} SchemaConfig
  * @property {string} name
- * @property {Object} content
- * @property {string} $id
+ * @property {string} uri
  */
 /**
  * @type {Record<string, SchemaConfig>}
@@ -18,23 +39,20 @@ import traefikSticky from './schemas/traefik-sticky.json';
 const SCHEMAS = {
   'docker-compose': {
     name: 'Compose',
-    $id: composeSpec.$id,
-    content: composeSpec,
+    uri: composeSpecUri,
   },
   'service': {
     name: 'Service',
-    $id: serviceSpec.$id,
-    content: serviceSpec,
+    uri: serviceSpecUri,
   },
   'traefik-sticky': {
     name: 'Traefik Sticky',
-    $id: traefikSticky.$id,
-    content: traefikSticky,
+    uri: traefikStickyUri,
   },
 };
 
 // Configure Monaco Workers
-window.MonacoEnvironment = {
+globalThis.MonacoEnvironment = {
   getWorkerUrl(workerId, label) {
     switch (label) {
       case 'yaml':
@@ -49,7 +67,7 @@ window.MonacoEnvironment = {
 
 // Initial YAML config
 const monacoYaml = configureMonacoYaml(monaco, {
-  enableSchemaRequest: false,
+  enableSchemaRequest: true,
   hover: true,
   completion: true,
   validate: true,
@@ -59,38 +77,35 @@ const monacoYaml = configureMonacoYaml(monaco, {
 
 // Configure YAML and JSON schemas with fetched content
 async function setupSchemas(schemaKey) {
-  console.log('[DEBUG] setupSchemas', schemaKey, SCHEMAS[schemaKey])
   const schemaConfig = SCHEMAS[schemaKey];
   if (!schemaConfig) {
     console.warn(`Schema key "${schemaKey}" not found in SCHEMAS`);
     return;
   }
-  const schemaContent = schemaConfig.content;
 
   // Configure YAML schema
-  monacoYaml.update({
+  await monacoYaml.update({
     schemas: [
       {
-        uri: schemaConfig.$id,
-        fileMatch: ['*'],
-        schema: schemaContent,
+        uri: schemaConfig.uri,
+        fileMatch: ['*']
       },
     ],
   });
 
   // Configure JSON schema
   monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
+    enableSchemaRequest: false,
     validate: true,
     allowComments: false,
     schemas: [
       {
+        uri: schemaConfig.uri,
         fileMatch: ['*'],
-        schema: schemaContent,
+        schema: await fetch(schemaConfig.uri).then(res => res.json()),
       },
-    ],
+    ]
   });
-
-  console.log(`Schema "${schemaConfig.name}" loaded successfully`)
 }
 /**
  * @type {monaco.editor.IStandaloneCodeEditor}
@@ -104,7 +119,13 @@ let currentLanguage = 'json';
 /**
  * @type {keyof typeof SCHEMAS}
  */
-let currentSchemaKey = 'docker-compose';
+let currentSchemaKey = null;
+
+/**
+ * @type {HTMLElement}
+ */
+let currentContainer = null;
+
 /**
  * 
  * @param {string} elementId
@@ -112,23 +133,19 @@ let currentSchemaKey = 'docker-compose';
  * @param {keyof typeof SCHEMAS} schemaKey 
  * @param {string} value 
  */
-window.initMonacoEditor = async function (elementId, language, schemaKey = 'docker-compose', value = "") {
-  console.log('[DEBUG] initMonacoEditor', elementId, language, schemaKey, value)
-
-  // If the 3rd argument is a value (e.g. from projects.templ which called it incorrectly), 
-  // try to detect it. If schemaKey is NOT in SCHEMAS and contains '{' or 'services:', it's likely a value.
-  if (typeof schemaKey === 'string' && !SCHEMAS[schemaKey] && (schemaKey.includes('{') || schemaKey.includes('services:'))) {
-    value = schemaKey;
-    schemaKey = 'docker-compose';
-  }
-
+globalThis.initMonacoEditor = async function (elementId, language, schemaKey = 'docker-compose', value = "") {
   if (currentSchemaKey !== schemaKey) {
     await setupSchemas(schemaKey);
     currentSchemaKey = schemaKey;
   }
+
+  const container = document.getElementById(elementId);
+  if (currentContainer !== container) {
+    editor?.dispose();
+    editor = null;
+    currentContainer = container;
+  }
   if (!editor) {
-    console.log('[DEBUG] create editor')
-    const container = document.getElementById(elementId);
     if (!container) {
       console.error(`Editor container #${elementId} not found`);
       return null;
@@ -151,21 +168,17 @@ window.initMonacoEditor = async function (elementId, language, schemaKey = 'dock
 
     // Provide a way for external code to get notified of changes (since projects.templ expects it)
     editor.onDidChangeModelContent(() => {
-      if (window.onMonacoEditorChange) {
-        window.onMonacoEditorChange(editor.getValue());
+      if (globalThis.onMonacoEditorChange) {
+        globalThis.onMonacoEditorChange(editor.getValue());
       }
     });
   }
-  console.log('[DEBUG] getValue')
   value = value || editor.getValue();
-  console.log('[DEBUG] language', language)
-
   const model = editor.getModel();
   if (language !== currentLanguage) {
     let objValue;
     try {
       if (language === 'yaml') { // from json to yaml
-        console.log('[DEBUG] from json to yaml')
         objValue = JSON.parse(value);
         value = yaml.dump(objValue, {
           indent: 2,
@@ -174,7 +187,6 @@ window.initMonacoEditor = async function (elementId, language, schemaKey = 'dock
         });
         monaco.editor.setModelLanguage(model, 'yaml');
       } else { // from yaml to json
-        console.log('[DEBUG] from yaml to json')
         objValue = yaml.load(value);
         value = JSON.stringify(objValue, null, 2);
         monaco.editor.setModelLanguage(model, 'json');
@@ -184,13 +196,38 @@ window.initMonacoEditor = async function (elementId, language, schemaKey = 'dock
     }
     currentLanguage = language;
   }
-  console.log('[DEBUG] existing models', monaco.editor.getModels())
-  console.log('[DEBUG] setValue', value)
   editor.setValue(value);
-  console.log('[DEBUG] return editor')
   return editor;
 }
 
-window.getMonacoEditor = function () {
+globalThis.getMonacoEditor = function () {
   return editor;
 }
+
+globalThis.disposeMonacoEditor = function () {
+  editor?.dispose();
+  editor = null;
+  currentContainer = null;
+}
+
+globalThis.listenToMarkers = function (listener) {
+  monaco.editor.onDidChangeMarkers((e) => {
+    listener(monacoErrorMarkers())
+  })
+}
+
+// error markers
+globalThis.monacoErrorMarkers = function () {
+  if (!editor) {
+    return [];
+  }
+
+  const model = editor.getModel();
+  if (!model) {
+    return [];
+  }
+  const owner = model.getLanguageId();
+  const markers = monaco.editor.getModelMarkers({ owner: owner, resource: model.uri });
+  return markers;
+}
+

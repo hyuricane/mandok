@@ -1,6 +1,7 @@
 package pages
 
 import (
+	"fmt"
 	"inovasiriset.co.id/docker/manager/web/templates/axs/components"
 	"inovasiriset.co.id/docker/manager/web/templates/layouts"
 	"path"
@@ -26,65 +27,66 @@ templ contentService(projectName, serviceName string, service string, format str
 			format = "json"
 		}
 		quotedService := strconv.Quote(service)
-		initScript := `window.onMonacoEditorChange = (v) => { value = v; };
+		initScript := `
+		window.initMonacoEditor('service-detail', '` + format + `', 'service', ` + quotedService + `)
 		$watch('format', async value => {
-			console.log('[DEBUG] format changed', value)
 			await window.initMonacoEditor('service-detail', value, 'service')
 		});
 		`
-		switch format {
-		case "yaml":
-			initScript += `
-			console.log('[DEBUG] load monaco editor for yaml')
-			await window.initMonacoEditor('service-detail','yaml', 'service', ` + quotedService + `)
-			`
-		default:
-			initScript += `
-			console.log('[DEBUG] load monaco editor for json')
-			await window.initMonacoEditor('service-detail','json', 'service', ` + quotedService + `)
-			`
-		}
 	}}
 	<form
 		x-target="page"
 		x-target.push="page"
 		method="POST"
-		x-data={ "{ format: '" + format + "', value: " + quotedService + " }" }
+		x-data={ "{ format: '" + format + "' }" }
 		x-init={ initScript }
-		action={ templ.SafeURL(path.Join("/ax", "project", projectName, "service", serviceName)) }
+		x-on:submit={ fmt.Sprintf(`
+			const markers = window.monacoErrorMarkers()
+			if (markers.length > 0) {
+				return
+			}
+			const body = {
+				format: format,
+			}
+			const editor = window.getMonacoEditor()
+			if (editor) {
+				body[format] = editor.getValue()
+			}
+			$ajax('/ax/project/%s/service/%s', {
+				method: 'POST',
+				body,
+				target: 'page',
+				push: true,
+			})
+		`, projectName, serviceName) }
+		class="container p-4"
 	>
 		if serviceName == "" {
 			<label for="service-name" class="block text-gray-700 text-sm font-bold mb-2">Name: </label>
 			<input id="service-name" name="name" type="text" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required/>
 		}
-		<span
-			id="service-error"
-			if err != nil {
-				style="color: red; display: block; margin-bottom: 1rem;"
-			} else {
-				style="color: red; display: none; margin-bottom: 1rem;"
-			}
-		>
-			if err != nil {
-				{ err.Error() }
-			}
-		</span>
-		<input
-			type="radio"
-			name="format"
-			value="yaml"
-			x-model="format"
-			class="rounded-full border-gray-300 focus:ring-2 focus:ring-blue-300"
-		/>YAML
-		<input
-			type="radio"
-			name="format"
-			value="json"
-			x-model="format"
-			class="rounded-full border-gray-300 focus:ring-2 focus:ring-blue-300"
-		/>JSON
-		<div id="service-detail" class="h-64 resize-y overflow-y-auto"></div>
-		<input type="hidden" name={ format } x-model="value"/>
+		@components.Error(err, "service-error")
+		<div class="flex space-x-4 mb-4">
+			<label class="flex items-center space-x-2">
+				<input
+					type="radio"
+					name="format"
+					value="yaml"
+					x-model="format"
+					class="rounded-full border-gray-300 focus:ring-2 focus:ring-blue-300"
+				/>YAML
+			</label>
+			<label class="flex items-center space-x-2">
+				<input
+					type="radio"
+					name="format"
+					value="json"
+					x-model="format"
+					class="rounded-full border-gray-300 focus:ring-2 focus:ring-blue-300"
+				/>JSON
+			</label>
+		</div>
+		<div id="service-detail" class="h-64 resize-y overflow-y-auto mt-4 overflow-x-visible p-4"></div>
 		<br/>
 		<button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">Submit</button>
 	</form>

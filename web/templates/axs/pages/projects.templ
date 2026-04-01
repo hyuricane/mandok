@@ -95,19 +95,12 @@ templ contentEditProject(projectName, project, format string, err error) {
 			format = "json"
 		}
 		quotedProject := strconv.Quote(project)
-		var initScript string = `$watch('format', async value => {
+		var initScript string = `
+		window.initMonacoEditor('project-detail', '` + format + `', 'docker-compose', ` + quotedProject + `)
+		$watch('format', async value => {
 			await window.initMonacoEditor('project-detail', value, 'docker-compose')
-		});`
-		switch format {
-		case "yaml":
-			initScript += `
-			window.initMonacoEditor('project-detail','yaml', 'docker-compose', ` + quotedProject + `);
-			`
-		default:
-			initScript += `
-			window.initMonacoEditor('project-detail', 'json', 'docker-compose', ` + quotedProject + `);
-			`
-		}
+		});
+		`
 	}}
 	<title>{ projectName }: Edit Raw - { format }</title>
 	<h1 class="text-3xl font-bold mb-4">Edit Project: { projectName }</h1>
@@ -117,26 +110,49 @@ templ contentEditProject(projectName, project, format string, err error) {
 		method="POST"
 		x-data={ "{ format: '" + format + "' }" }
 		x-init={ initScript }
-		action={ templ.SafeURL(path.Join("/ax", "project", projectName, "edit")) }
+		@submit.prevent={ fmt.Sprintf(`
+			const markers = window.monacoErrorMarkers()
+			if (markers.length > 0) {
+				return
+			}
+			const body = {
+				format: format,
+			}
+			const editor = window.getMonacoEditor()
+			if (editor) {
+				body[format] = editor.getValue()
+			}
+			$ajax('/ax/project/%s/edit', {
+				method: 'POST',
+				body,
+				target: 'page',
+				push: true,
+			})
+		`, projectName) }
+		class="container p-4"
 	>
 		@components.Error(err, "edit-project-error")
-		<input
-			type="radio"
-			name="format"
-			value="yaml"
-			x-model="format"
-			class="rounded-full border-gray-300 focus:ring-2 focus:ring-blue-300"
-		/>YAML
-		<input
-			type="radio"
-			name="format"
-			value="json"
-			x-model="format"
-			class="rounded-full border-gray-300 focus:ring-2 focus:ring-blue-300"
-		/>JSON
-		<div id="project-detail" class="h-64 resize-y overflow-y-auto"></div>
-		<input type="hidden" name={ format }/>
-		<br/>
+		<div class="flex space-x-4 mb-4">
+			<label class="flex items-center space-x-2">
+				<input
+					type="radio"
+					name="format"
+					value="yaml"
+					x-model="format"
+					class="rounded-full border-gray-300 focus:ring-2 focus:ring-blue-300"
+				/>YAML
+			</label>
+			<label class="flex items-center space-x-2">
+				<input
+					type="radio"
+					name="format"
+					value="json"
+					x-model="format"
+					class="rounded-full border-gray-300 focus:ring-2 focus:ring-blue-300"
+				/>JSON
+			</label>
+		</div>
+		<div id="project-detail" class="h-64 resize-y overflow-y-auto mt-4 overflow-x-visible p-4"></div>
 		<button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">Submit</button>
 	</form>
 }
