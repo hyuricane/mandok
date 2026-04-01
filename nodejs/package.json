@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "build:workers": "npx esbuild node_modules/monaco-yaml/yaml.worker.js --bundle --outfile=../static/yaml.worker.js && npx esbuild node_modules/monaco-editor/esm/vs/language/json/json.worker.js --bundle --outfile=../static/json.worker.js && npx esbuild node_modules/monaco-editor/esm/vs/editor/editor.worker.js --bundle --outfile=../static/editor.worker.js",
+    "build:workers": "npx esbuild node_modules/monaco-yaml/yaml.worker.js --bundle --minify --outfile=../static/yaml.worker.js && npx esbuild node_modules/monaco-editor/esm/vs/language/json/json.worker.js --bundle --minify --outfile=../static/json.worker.js && npx esbuild node_modules/monaco-editor/esm/vs/editor/editor.worker.js --bundle --minify --outfile=../static/editor.worker.js",
     "build": "npm run deref-schemas && vite build && npm run build:workers && rm -rf ../static/chunks && rm -rf ../static/assets && mv static/* ../static/",
     "dev": "vite",
     "deref-schemas": "node tools/deref-schemas.js"

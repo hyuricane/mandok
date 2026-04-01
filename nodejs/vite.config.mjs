@@ -15,10 +15,12 @@ export default defineConfig({
         format: 'iife',
         name: 'MandokBundle',
         entryFileNames: 'bundle.js',
+        chunkFileNames: 'chunk/[name].[hash].js',
+        cleanDir: true,
         assetFileNames: '[name].[ext]',
       }
     },
-    minify: false,
+    minify: true,
   },
   plugins: [
   ],
