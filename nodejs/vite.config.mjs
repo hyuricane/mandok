@@ -9,7 +9,7 @@ export default defineConfig({
   build: {
     outDir: 'static',
     emptyOutDir: true,
-    rollupOptions: {
+    rolldownOptions: {
       input: path.resolve(__dirname, 'src/index.js'),
       output: {
         format: 'iife',
