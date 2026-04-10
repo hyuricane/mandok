@@ -72,8 +72,9 @@ async function loadMonaco() {
       }
     },
   };
-  const [{ default: monaco }, { configureMonacoYaml }] = await Promise.all([import('monaco-editor'), import('monaco-yaml')])
-  monacoModule = monaco;
+  const [monaco, { configureMonacoYaml }] = await Promise.all([import('monaco-editor'), import('monaco-yaml')])
+  globalThis.monaco = monaco
+
   monacoYamlModule = configureMonacoYaml(monaco, {
     enableSchemaRequest: true,
     hover: true,
@@ -83,9 +84,8 @@ async function loadMonaco() {
     schemas: [],
   });
   configured = true;
+  monacoModule = monaco;
 
-  // expose to global
-  globalThis.monaco = monacoModule
   globalThis.monacoYaml = monacoYamlModule
   return { monaco: monacoModule, monacoYaml: monacoYamlModule };
 }
