@@ -1,5 +1,3 @@
-import * as monaco from 'monaco-editor';
-import { configureMonacoYaml } from 'monaco-yaml';
 import yaml from 'js-yaml';
 import composeSpec from './schemas/compose_spec.deref.json';
 import traefikSticky from './schemas/traefik-sticky.deref.json';
@@ -51,29 +49,58 @@ const SCHEMAS = {
   },
 };
 
-// Configure Monaco Workers
-globalThis.MonacoEnvironment = {
-  getWorkerUrl(workerId, label) {
-    switch (label) {
-      case 'yaml':
-        return '/static/yaml.worker.js';
-      case 'json':
-        return '/static/json.worker.js';
-      default:
-        return '/static/editor.worker.js';
-    }
-  },
-};
+let monacoModule = null;
+let monacoYamlModule = null;
+let configured = false
 
-// Initial YAML config
-const monacoYaml = configureMonacoYaml(monaco, {
-  enableSchemaRequest: true,
-  hover: true,
-  completion: true,
-  validate: true,
-  format: true,
-  schemas: [],
-});
+/**
+ * 
+ * @returns {Promise<{monaco: typeof import('monaco-editor'), monacoYaml: typeof import('monaco-yaml').configureMonacoYaml}>}
+ */
+async function loadMonaco() {
+  if (monacoModule) return { monaco: monacoModule, monacoYaml: monacoYamlModule };
+  // Configure Monaco Workers
+  globalThis.MonacoEnvironment = {
+    getWorkerUrl(workerId, label) {
+      switch (label) {
+        case 'yaml':
+          return '/static/yaml.worker.js';
+        case 'json':
+          return '/static/json.worker.js';
+        default:
+          return '/static/editor.worker.js';
+      }
+    },
+  };
+  const [{ default: monaco }, { configureMonacoYaml }] = await Promise.all([import('monaco-editor'), import('monaco-yaml')])
+  monacoModule = monaco;
+  monacoYamlModule = configureMonacoYaml(monaco, {
+    enableSchemaRequest: true,
+    hover: true,
+    completion: true,
+    validate: true,
+    format: true,
+    schemas: [],
+  });
+  configured = true;
+
+  // expose to global
+  globalThis.monaco = monacoModule
+  globalThis.monacoYaml = monacoYamlModule
+  return { monaco: monacoModule, monacoYaml: monacoYamlModule };
+}
+
+
+// Shared editor state
+/** @type {monaco.editor.IStandaloneCodeEditor | null} */
+let editor = null;
+/** @type {'json'|'yaml'} */
+let currentLanguage = 'json';
+/** @type {keyof typeof SCHEMAS | null} */
+let currentSchemaKey = null;
+/** @type {HTMLElement | null} */
+let currentContainer = null;
+
 
 // Configure YAML and JSON schemas with fetched content
 async function setupSchemas(schemaKey) {
@@ -82,6 +109,8 @@ async function setupSchemas(schemaKey) {
     console.warn(`Schema key "${schemaKey}" not found in SCHEMAS`);
     return;
   }
+
+  const { monaco, monacoYaml } = await loadMonaco();
 
   // Configure YAML schema
   await monacoYaml.update({
@@ -107,24 +136,6 @@ async function setupSchemas(schemaKey) {
     ]
   });
 }
-/**
- * @type {monaco.editor.IStandaloneCodeEditor}
- */
-let editor = null;
-/**
- * @type {'json'|'yaml'}
- */
-let currentLanguage = 'json';
-
-/**
- * @type {keyof typeof SCHEMAS}
- */
-let currentSchemaKey = null;
-
-/**
- * @type {HTMLElement}
- */
-let currentContainer = null;
 
 /**
  * 
@@ -134,6 +145,7 @@ let currentContainer = null;
  * @param {string} value 
  */
 globalThis.initMonacoEditor = async function (elementId, language, schemaKey = 'docker-compose', value = "") {
+  const { monaco } = await loadMonaco();
   if (currentSchemaKey !== schemaKey) {
     await setupSchemas(schemaKey);
     currentSchemaKey = schemaKey;
@@ -211,7 +223,7 @@ globalThis.disposeMonacoEditor = function () {
 }
 
 globalThis.listenToMarkers = function (listener) {
-  monaco.editor.onDidChangeMarkers((e) => {
+  globalThis.monaco.editor.onDidChangeMarkers((e) => {
     listener(monacoErrorMarkers())
   })
 }
@@ -227,7 +239,7 @@ globalThis.monacoErrorMarkers = function () {
     return [];
   }
   const owner = model.getLanguageId();
-  const markers = monaco.editor.getModelMarkers({ owner: owner, resource: model.uri });
+  const markers = globalThis.monaco.editor.getModelMarkers({ owner: owner, resource: model.uri });
   return markers;
 }
 
