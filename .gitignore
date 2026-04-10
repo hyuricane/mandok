@@ -1,5 +1,6 @@
 .env
 /dist
-/static
+/static/*
 !/static/index.html
+!/static/alpine-data.js
 /web/templates/**/*_templ.go

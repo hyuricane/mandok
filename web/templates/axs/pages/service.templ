@@ -26,39 +26,13 @@ templ contentService(projectName, serviceName string, service string, format str
 		if format == "" {
 			format = "json"
 		}
-		quotedService := strconv.Quote(service)
-		initScript := `
-		window.initMonacoEditor('service-detail', '` + format + `', 'service', ` + quotedService + `)
-		$watch('format', async value => {
-			await window.initMonacoEditor('service-detail', value, 'service')
-		});
-		`
 	}}
 	<form
 		x-target="page"
 		x-target.push="page"
 		method="POST"
-		x-data={ "{ format: '" + format + "' }" }
-		x-init={ initScript }
-		x-on:submit={ fmt.Sprintf(`
-			const markers = window.monacoErrorMarkers()
-			if (markers.length > 0) {
-				return
-			}
-			const body = {
-				format: format,
-			}
-			const editor = window.getMonacoEditor()
-			if (editor) {
-				body[format] = editor.getValue()
-			}
-			$ajax('/ax/project/%s/service/%s', {
-				method: 'POST',
-				body,
-				target: 'page',
-				push: true,
-			})
-		`, projectName, serviceName) }
+		x-data={ fmt.Sprintf("serviceContentEdit('%s', '%s', '%s', %s)", projectName, serviceName, format, strconv.Quote(service)) }
+		@submit.prevent="submit()"
 		class="container p-4"
 	>
 		if serviceName == "" {

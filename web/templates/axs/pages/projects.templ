@@ -94,13 +94,6 @@ templ contentEditProject(projectName, project, format string, err error) {
 		if format == "" {
 			format = "json"
 		}
-		quotedProject := strconv.Quote(project)
-		var initScript string = `
-		window.initMonacoEditor('project-detail', '` + format + `', 'docker-compose', ` + quotedProject + `)
-		$watch('format', async value => {
-			await window.initMonacoEditor('project-detail', value, 'docker-compose')
-		});
-		`
 	}}
 	<title>{ projectName }: Edit Raw - { format }</title>
 	<h1 class="text-3xl font-bold mb-4">Edit Project: { projectName }</h1>
@@ -108,27 +101,8 @@ templ contentEditProject(projectName, project, format string, err error) {
 		x-target="page"
 		x-target.push="page"
 		method="POST"
-		x-data={ "{ format: '" + format + "' }" }
-		x-init={ initScript }
-		@submit.prevent={ fmt.Sprintf(`
-			const markers = window.monacoErrorMarkers()
-			if (markers.length > 0) {
-				return
-			}
-			const body = {
-				format: format,
-			}
-			const editor = window.getMonacoEditor()
-			if (editor) {
-				body[format] = editor.getValue()
-			}
-			$ajax('/ax/project/%s/edit', {
-				method: 'POST',
-				body,
-				target: 'page',
-				push: true,
-			})
-		`, projectName) }
+		x-data={ fmt.Sprintf("projectContentEdit('%s', '%s', %s)", projectName, format, strconv.Quote(project)) }
+		@submit.prevent="submit()"
 		class="container p-4"
 	>
 		@components.Error(err, "edit-project-error")
