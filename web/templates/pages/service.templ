@@ -5,58 +5,59 @@ import "inovasiriset.co.id/docker/manager/web/templates/layouts"
 import "inovasiriset.co.id/docker/manager/web/templates/components"
 
 templ Service(projectName string, serviceName string, service string, format string, err error) {
-  {{
-    var selfUrl string
-     if service != "" {
-      selfUrl = path.Join("/", "project", projectName , "service",  serviceName, "edit")
-     } else {
-      selfUrl = path.Join("/", "project", projectName , "service-new")
-     }
-  }}
-  @layouts.MainLayout(projectName + "-"+serviceName){
-  @components.Breadcrumbs([]components.Breadcrumb{
-    { Text: "Home", Link: "/" },
-    { Text: projectName, Link: path.Join("/project", projectName) },
-    { Text: serviceName },
-  }...)
-  if serviceName == "" {
-    <h1>New Service</h1>
-  } else {
-    <h1>Edit Service: {serviceName}</h1>
-  }
-  <form x-data method="post" action={templ.SafeURL(path.Join("/", "project", projectName , "service",  serviceName))}>
-    if serviceName == "" {
-      <label for="service-name">Name: 
-        <input id="service-name" name="name" type="text">
-      </label>
-      <br/>
-    }
-    if err != nil {
-      <span style="color: red;">{err.Error()}</span>
-      <br/>
-    }
-    <input id="service-detail-format" x-sync type="hidden" name="format" value={format} />
-    switch (format) {
-      case "yaml":
-        <span id="service-detail-format-yaml" x-sync>yaml</span>
-        <a id="service-detail-format-json" x-sync x-target="service-detail" href={templ.SafeURL(selfUrl + "?format=json") }>json</a>
-      case "json":
-        <a id="service-detail-format-yaml" x-sync x-target="service-detail" href={templ.SafeURL(selfUrl + "?format=yaml") }>yaml</a>
-        <span id="service-detail-format-json" x-sync>json</span>
-    }
-    :
-    <br/>
-    <textarea id="service-detail" name="content" x-merge="update">
-    if service != "" {
-      {service}
-    } else if format  == "json" {
-      {"{}"}
-    }
-    </textarea>
-    <br/>
-    <button type="submit">Submit</button>
-  </form>
-  <br/>
-  <a href={templ.SafeURL(path.Join("/", "project", projectName, "route", serviceName))} >Edit Route</a>
-  }
+	{{
+		var selfUrl string
+		if service != "" {
+			selfUrl = path.Join("/", "project", projectName, "service", serviceName, "edit")
+		} else {
+			selfUrl = path.Join("/", "project", projectName, "service-new")
+		}
+	}}
+	@layouts.MainLayout(projectName + "-" + serviceName) {
+		@components.Breadcrumbs([]components.Breadcrumb{
+			{Text: "Home", Link: "/"},
+			{Text: projectName, Link: path.Join("/project", projectName)},
+			{Text: serviceName},
+		}...)
+		if serviceName == "" {
+			<h1>New Service</h1>
+		} else {
+			<h1>Edit Service: { serviceName }</h1>
+		}
+		<form x-data method="post" action={ templ.SafeURL(path.Join("/", "project", projectName, "service", serviceName, "edit")) }>
+			if serviceName == "" {
+				<label for="service-name">
+					Name: 
+					<input id="service-name" name="name" type="text"/>
+				</label>
+				<br/>
+			}
+			if err != nil {
+				<span style="color: red;">{ err.Error() }</span>
+				<br/>
+			}
+			<input id="service-detail-format" x-sync type="hidden" name="format" value={ format }/>
+			switch (format) {
+				case "yaml":
+					<span id="service-detail-format-yaml" x-sync>yaml</span>
+					<a id="service-detail-format-json" x-sync x-target="service-detail" href={ templ.SafeURL(selfUrl + "?format=json") }>json</a>
+				case "json":
+					<a id="service-detail-format-yaml" x-sync x-target="service-detail" href={ templ.SafeURL(selfUrl + "?format=yaml") }>yaml</a>
+					<span id="service-detail-format-json" x-sync>json</span>
+			}
+			:
+			<br/>
+			<textarea id="service-detail" name="content" x-merge="update">
+				if service != "" {
+					{ service }
+				} else if format  == "json" {
+					{ "{}" }
+				}
+			</textarea>
+			<br/>
+			<button type="submit">Submit</button>
+		</form>
+		<br/>
+		<a href={ templ.SafeURL(path.Join("/", "project", projectName, "route", serviceName)) }>Edit Route</a>
+	}
 }

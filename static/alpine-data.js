@@ -22,7 +22,7 @@ window.addEventListener('alpine:init', () => {
       if (editor) {
         body[this.format] = editor.getValue()
       }
-      $ajax('/ax/project/' + this.name + '/edit', {
+      this.$ajax('/ax/project/' + this.project + '/edit', {
         method: 'POST',
         body,
         target: 'page',
@@ -54,7 +54,7 @@ window.addEventListener('alpine:init', () => {
       if (editor) {
         body[this.format] = editor.getValue()
       }
-      $ajax('/ax/project/' + this.project + '/service/' + this.service + '/edit', {
+      this.$ajax('/ax/project/' + this.project + '/service/' + this.service + '/edit', {
         method: 'POST',
         body,
         target: 'page',

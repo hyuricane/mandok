@@ -35,7 +35,7 @@ func RouteDashboard(group *echo.Group) {
 	projectGroup.GET("/:project/service/:service/stop", stopService)
 	projectGroup.GET("/:project/service/:service/edit", editService)
 	projectGroup.GET("/:project/service-new", addService)
-	projectGroup.POST("/:project/service/:service", doEditService)
+	projectGroup.POST("/:project/service/:service/edit", doEditService)
 	projectGroup.GET("/:project/service/:service/log", getLog)
 	projectGroup.POST("/:project/service", doAddService)
 	projectGroup.GET("/:project/route/:service", editRoute)
