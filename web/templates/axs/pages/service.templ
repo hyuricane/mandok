@@ -40,29 +40,30 @@ templ contentService(projectName, serviceName string, service string, format str
 			<input id="service-name" name="name" type="text" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required/>
 		}
 		@components.Error(err, "service-error")
-		<div class="flex space-x-4 mb-4">
-			<label class="flex items-center space-x-2">
-				<input
-					type="radio"
-					name="format"
-					value="yaml"
-					x-model="format"
-					class="rounded-full border-gray-300 focus:ring-2 focus:ring-blue-300"
-				/>YAML
-			</label>
-			<label class="flex items-center space-x-2">
-				<input
-					type="radio"
-					name="format"
-					value="json"
-					x-model="format"
-					class="rounded-full border-gray-300 focus:ring-2 focus:ring-blue-300"
-				/>JSON
-			</label>
+		<div class="flex justify-between">
+			<div class="flex space-x-4">
+				<label class="flex items-center space-x-2">
+					<input
+						type="radio"
+						name="format"
+						value="yaml"
+						x-model="format"
+						class="rounded-full border-gray-300 focus:ring-2 focus:ring-blue-300"
+					/>YAML
+				</label>
+				<label class="flex items-center space-x-2">
+					<input
+						type="radio"
+						name="format"
+						value="json"
+						x-model="format"
+						class="rounded-full border-gray-300 focus:ring-2 focus:ring-blue-300"
+					/>JSON
+				</label>
+			</div>
+			<button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Submit</button>
 		</div>
-		<div id="service-detail" class="h-64 resize-y overflow-y-auto mt-4 overflow-x-visible p-4"></div>
-		<br/>
-		<button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">Submit</button>
+		<div id="service-detail" class="h-screen resize-y overflow-y-auto mt-2 overflow-x-visible"></div>
 	</form>
 }
 
