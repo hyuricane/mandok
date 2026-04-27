@@ -4,8 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
+	"strconv"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -116,11 +120,11 @@ func WriteEnvFile(projectDir string, vals []EnvVal, secrets map[string]bool) err
 			envmapMasked[v.Key] = "******"
 		}
 	}
-	payloadPlain, err := godotenv.Marshal(envmapPlain)
+	payloadPlain, err := dockerFriendlyMarshal(envmapPlain)
 	if err != nil {
 		return err
 	}
-	payloadMasked, err := godotenv.Marshal(envmapMasked)
+	payloadMasked, err := dockerFriendlyMarshal(envmapMasked)
 	if err != nil {
 		return err
 	}
@@ -133,4 +137,31 @@ func WriteEnvFile(projectDir string, vals []EnvVal, secrets map[string]bool) err
 		return err
 	}
 	return nil
+}
+
+// Marshal outputs the given environment as a dotenv-formatted environment file.
+// Each line is in the format: KEY="VALUE" where VALUE is backslash-escaped.
+func dockerFriendlyMarshal(envMap map[string]string) (string, error) {
+	lines := make([]string, 0, len(envMap))
+	for k, v := range envMap {
+		if d, err := strconv.Atoi(v); err == nil {
+			lines = append(lines, fmt.Sprintf(`%s=%d`, k, d))
+		} else {
+			lines = append(lines, fmt.Sprintf(`%s="%s"`, k, doubleQuoteEscape(v)))
+		}
+	}
+	sort.Strings(lines)
+	return strings.Join(lines, "\n"), nil
+}
+
+var replacer = strings.NewReplacer(
+	"\\", "\\\\",
+	"\"", "\\\"",
+	"\n", "\\n",
+	"\r", "\\r",
+	"`", "\\`",
+)
+
+func doubleQuoteEscape(line string) string {
+	return replacer.Replace(line)
 }
