@@ -26,7 +26,8 @@ window.addEventListener('alpine:init', () => {
         method: 'POST',
         body,
         target: 'page',
-        push: true,
+      }).then(() => {
+        window.history.replaceState({}, '', '/ax/project/' + this.project)
       })
     }
   }));
@@ -58,7 +59,8 @@ window.addEventListener('alpine:init', () => {
         method: 'POST',
         body,
         target: 'page',
-        push: true,
+      }).then(() => {
+        window.history.replaceState({}, '', '/ax/project/' + this.project)
       })
     }
   }))
