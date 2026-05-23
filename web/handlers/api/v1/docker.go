@@ -358,7 +358,7 @@ func getContainers(projectName string, containerName string) ([]container.Summar
 			listFilters.Add("label", "com.docker.compose.service="+containerName)
 		}
 	}
-	return dockerCli.ContainerList(context.TODO(), container.ListOptions{Filters: listFilters})
+	return dockerCli.ContainerList(context.TODO(), container.ListOptions{Filters: listFilters, All: true})
 }
 
 func restartContainer(workdir string, containerName string) error {
