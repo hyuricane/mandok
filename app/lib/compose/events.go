@@ -2,6 +2,7 @@ package compose
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/docker/compose/v2/pkg/api"
@@ -33,6 +34,14 @@ func EventStreams(projectDir string) (chan DockerComposeEvent, func(), error) {
 
 	go getAPI().Events(cancelableContext, project.Name, api.EventsOptions{
 		Consumer: func(event api.Event) error {
+			// ignore execs (presumed healthcheck), not an important docker event for us
+			ignoredExecPrefixes := []string{"exec_create: ", "exec_start: ", "exec_die"} // these are common pattern for healthchecks
+			for _, prefix := range ignoredExecPrefixes {
+				if strings.HasPrefix(event.Status, prefix) {
+					return nil
+				}
+			}
+
 			dEvent := DockerComposeEvent{
 				Action:  event.Status,
 				Service: event.Service,
