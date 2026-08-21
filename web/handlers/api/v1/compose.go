@@ -462,9 +462,11 @@ func getLogs(c echo.Context) error {
 	// get logs
 
 	// return sse
-	c.Response().Header().Set(echo.HeaderContentType, "text/event-stream")
+	c.Response().Header().Set("Content-Type", "text/event-stream")
 	c.Response().Header().Set("Cache-Control", "no-cache")
 	c.Response().Header().Set("Connection", "keep-alive")
+	c.Response().Header().Set("Transfer-Encoding", "chunked")
+	c.Response().Header().Set("X-Accel-Buffering", "no")
 	c.Response().WriteHeader(200)
 
 	ch, cancel, err := compose.LogStreamWithContext(c.Request().Context(), projectDir, serviceName, tail)
@@ -484,7 +486,9 @@ func getLogs(c echo.Context) error {
 				return nil
 			}
 			for _, line := range strings.Split(lines, "\n") {
-				fmt.Fprintf(c.Response().Writer, "event: log\ndata: %s\n\n", line)
+				if _, err = fmt.Fprintf(c.Response().Writer, "event: log\ndata: %s\n\n", line); err != nil {
+					return err
+				}
 			}
 			c.Response().Flush()
 		}

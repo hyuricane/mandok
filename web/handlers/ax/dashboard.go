@@ -387,6 +387,15 @@ func getLog(c echo.Context) error {
 		<-c.Request().Context().Done()
 		cancel()
 	}()
+
+	// Prevent Cloudflare / reverse proxy buffering
+	c.Response().Header().Set("Content-Type", "text/html; charset=utf-8")
+	c.Response().Header().Set("Cache-Control", "no-cache, no-transform")
+	c.Response().Header().Set("Connection", "keep-alive")
+	c.Response().Header().Set("X-Accel-Buffering", "no")
+	c.Response().WriteHeader(http.StatusOK)
+	c.Response().Flush()
+
 	return components.StreamLog(out).Render(c.Request().Context(), c.Response().Writer)
 }
 

@@ -24,6 +24,7 @@ func getEvents(c echo.Context) error {
 	c.Response().Header().Set("Cache-Control", "no-cache")
 	c.Response().Header().Set("Connection", "keep-alive")
 	c.Response().Header().Set("Transfer-Encoding", "chunked")
+	c.Response().Header().Set("X-Accel-Buffering", "no")
 	c.Response().WriteHeader(200)
 	keepAlive := time.NewTicker(30 * time.Second)
 	defer keepAlive.Stop()
