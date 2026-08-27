@@ -23,6 +23,17 @@ fi
 echo "Creating installation directory: $INSTALL_DIR"
 mkdir -p "$INSTALL_DIR/projects"
 
+# if busy offer to kill or stop current service
+if [ -f "$INSTALL_DIR/mandok" ]; then
+    echo "Mandok is already installed. Do you want to update it?"
+    read -p "[Y/n] " -n 1 -r
+    if [[ $REPLY =~ ^[Nn]$ ]]; then
+        exit 0
+    fi
+    echo "stopping current service..."
+    sudo systemctl stop $SERVICE_NAME
+fi
+
 echo "Installing binary..."
 cp dist/mandok "$INSTALL_DIR/"
 chmod +x "$INSTALL_DIR/mandok"

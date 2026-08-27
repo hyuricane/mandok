@@ -204,7 +204,7 @@ templ Statuses(projectName string, projectStats map[string]compose.ServiceStatus
 					<tr id={ fmt.Sprintf("project-status-%s", v.Name) } class="hover:bg-gray-100">
 						<td class="px-6 py-2 whitespace-nowrap">{ v.Name }</td>
 						<td class="px-6 py-2 break-all">{ v.Image }</td>
-						<td class="px-6 py-2 whitespace-nowrap">{ fmt.Sprintf("%d/%d", v.Running, v.Expected) }</td>
+						<td class="px-6 py-2 whitespace-nowrap">{ fmt.Sprintf("%d/%d", v.Running, v.Expected) }  </td>
 						<td class="px-6 py-2 whitespace-nowrap">{ v.State }</td>
 						<td class="px-6 py-2 break-normal">
 							if v.Route != "" {

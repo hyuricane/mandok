@@ -3,6 +3,7 @@ package compose
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -34,6 +35,7 @@ type ServiceStatus struct {
 	Image    string `json:"Image"`
 	Expected int    `json:"Expected"`
 	Running  int    `json:"Running"`
+	ExitCode int    `json:"ExitCode"`
 	Route    string `json:"Route,omitempty"`
 }
 
@@ -104,6 +106,7 @@ func GetStatus(projectDir string, services ...string) (map[string]ServiceStatus,
 		return nil, err
 	}
 	for k, v := range project.Services {
+		log.Printf("[DEBUG] service %s %#v", k, v)
 		ss := ServiceStatus{
 			Name:  v.Name,
 			Image: v.Image,
@@ -140,7 +143,7 @@ func GetStatus(projectDir string, services ...string) (map[string]ServiceStatus,
 			}
 			if ps.State == "running" {
 				status.Running++
-				status.State = "running"
+				status.State = ps.Status
 			}
 			retval[ps.Service] = status
 		}
