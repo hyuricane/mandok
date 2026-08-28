@@ -3,7 +3,7 @@ package compose
 import (
 	"context"
 	"fmt"
-	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -30,13 +30,15 @@ type ExtendedPSData struct {
 }
 
 type ServiceStatus struct {
-	Name     string `json:"Name"`
-	State    string `json:"State"`
-	Image    string `json:"Image"`
-	Expected int    `json:"Expected"`
-	Running  int    `json:"Running"`
-	ExitCode int    `json:"ExitCode"`
-	Route    string `json:"Route,omitempty"`
+	Name     string   `json:"Name"`
+	State    string   `json:"State"`
+	Status   string   `json:"Status"`
+	Image    string   `json:"Image"`
+	Expected int      `json:"Expected"`
+	Running  int      `json:"Running"`
+	ExitCode int      `json:"ExitCode"`
+	Route    string   `json:"Route,omitempty"`
+	Ports    []string `json:"Ports,omitempty"`
 }
 
 func GetStatus(projectDir string, services ...string) (map[string]ServiceStatus, error) {
@@ -106,10 +108,28 @@ func GetStatus(projectDir string, services ...string) (map[string]ServiceStatus,
 		return nil, err
 	}
 	for k, v := range project.Services {
-		log.Printf("[DEBUG] service %s %#v", k, v)
+		ports := []string{}
+		if v.Ports != nil {
+			for _, port := range v.Ports {
+				portsegments := []string{}
+				if port.Target != 0 {
+					portsegments = append(portsegments, strconv.Itoa(int(port.Target)))
+				}
+				if port.Published != "" {
+					portsegments = append(portsegments, port.Published)
+				}
+				if port.Protocol != "" {
+					portsegments = append(portsegments, port.Protocol)
+				}
+				if len(portsegments) > 0 {
+					ports = append(ports, strings.Join(portsegments, ":"))
+				}
+			}
+		}
 		ss := ServiceStatus{
 			Name:  v.Name,
 			Image: v.Image,
+			Ports: ports,
 		}
 		if v.Deploy != nil && v.Deploy.Replicas != nil {
 			ss.Expected = int(*v.Deploy.Replicas)
@@ -135,15 +155,14 @@ func GetStatus(projectDir string, services ...string) (map[string]ServiceStatus,
 		status, ok := retval[ps.Service]
 		if ok {
 			status.Image = ps.Image
+			status.Status = ps.Status
+			status.State = ps.State
+			status.ExitCode = ps.ExitCode
 			if status.Expected == 0 {
 				status.Expected = 1
 			}
-			if status.State == "" {
-				status.State = ps.State
-			}
 			if ps.State == "running" {
 				status.Running++
-				status.State = ps.Status
 			}
 			retval[ps.Service] = status
 		}
