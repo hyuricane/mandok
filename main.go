@@ -9,7 +9,7 @@ import (
 	"inovasiriset.co.id/docker/manager/web"
 )
 
-//go:embed static/*
+//go:embed all:static
 var staticFs embed.FS
 
 func main() {

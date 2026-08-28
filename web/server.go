@@ -12,6 +12,7 @@ import (
 	"inovasiriset.co.id/docker/manager/web/handlers/dashboard"
 	"inovasiriset.co.id/docker/manager/web/handlers/hx"
 	"inovasiriset.co.id/docker/manager/web/middlewares"
+	"inovasiriset.co.id/docker/manager/web/templates/layouts"
 )
 
 type FallingBackFS struct {
@@ -51,6 +52,9 @@ func ListenHttp(statics map[string][]fs.FS) error {
 		} else {
 			app.StaticFS(prefix, &FallingBackFS{FSs: fsys})
 		}
+	}
+	if staticFsys, ok := statics["/static"]; ok {
+		layouts.SetStaticFS(staticFsys...)
 	}
 	dashboard.RouteDashboard(app.Group(""))
 	hx.RouteDashboard(app.Group("/hx"))

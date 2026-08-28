@@ -9,8 +9,10 @@ templ HTMX(title string, breadcrumbs ...components.Breadcrumb) {
 			<script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
 			<script src="https://unpkg.com/htmx-ext-sse@2.2.2/sse.js"></script>
 			<script src="https://unpkg.com/htmx-ext-remove-me@2.0.0/remove-me.js"></script>
-			<script src="/static/bundle.js"></script>
-			<link href="/static/bundle.css" rel="stylesheet"/>
+			<script src={ AssetPath("src/index.js") }></script>
+			for _, css := range AssetCSS("src/index.js") {
+				<link href={ css } rel="stylesheet"/>
+			}
 		</head>
 		<body hx-indicator="#page-load-indicator">
 			<div id="page-load-indicator" class="htmx-indicator" hx-ext="remove-me">
