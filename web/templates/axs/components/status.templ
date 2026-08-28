@@ -215,17 +215,16 @@ templ Statuses(projectName string, projectStats map[string]compose.ServiceStatus
 							<div class="flex flex-col">
 							if v.Route != "" {
 								<div class="flex flex-row">
-									<a href={ templ.SafeURL("//" + v.Route) } target="_blank" class="text-blue-500 hover:underline">{ v.Route }</a> | 
+									<a href={ templ.SafeURL("//" + v.Route) } target="_blank" class="text-blue-500 hover:underline">{ v.Route }</a>
 									<a
 										href={ templ.SafeURL(path.Join("/ax", "project", projectName, "route", v.Name)) }
 										x-target="page"
 										x-target.push="page"
 										class="text-blue-500 hover:underline mr-2"
 									>
-										Edit
+										@editIcon()
 									</a>
 								</div>
-								
 							} else {
 								<div class="flex flex-row">
 									<a
@@ -239,9 +238,9 @@ templ Statuses(projectName string, projectStats map[string]compose.ServiceStatus
 								</div>
 							}
 							if len(v.Ports) > 0 {
-								<ul class="flex flex-row text-gray-500">
+								<ul class="list-disc text-gray-500 text-xs ml-4">
 									for _, port := range v.Ports {
-										<li class="text-xs">{ port }</li>
+										<li>{ port }</li>
 									}
 								</ul>
 							}

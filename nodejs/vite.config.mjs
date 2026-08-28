@@ -9,21 +9,21 @@ export default defineConfig({
   build: {
     outDir: 'static',
     emptyOutDir: true,
+    manifest: true,
     rolldownOptions: {
       input: path.resolve(__dirname, 'src/index.js'),
       output: {
         format: 'iife',
         name: 'MandokBundle',
-        entryFileNames: 'bundle.js',
+        entryFileNames: 'bundle.[hash].js',
         chunkFileNames: 'chunk/[name].[hash].js',
         cleanDir: true,
-        assetFileNames: '[name].[ext]',
+        assetFileNames: '[name].[hash].[ext]',
       }
     },
     minify: true,
   },
-  plugins: [
-  ],
+  plugins: [],
   optimizeDeps: {
     include: [
       'monaco-editor/esm/vs/editor/editor.api',
