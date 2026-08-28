@@ -28,8 +28,8 @@ templ Envs(projectName string, envVals []compose.EnvVal, err error) {
 			<tbody>
 				for _, v := range envVals {
 					<tr class="hover:bg-gray-100">
-						<td class="px-6 py-2">{ v.Key }</td>
-						<td class="px-6 py-2 break-all">{ v.Val }</td>
+						<td class="font-mono font-semibold text-xs md:text-sm text-slate-800 px-6 py-2 select-all">{ v.Key }</td>
+						<td class="font-mono text-xs md:text-sm text-slate-600 px-6 py-2 break-all select-all">{ v.Val }</td>
 						<td class="px-6 py-2 whitespace-nowrap">
 							<a
 								href={ templ.SafeURL(path.Join("/ax", "project", projectName, "envs", "delete", v.Key)) }
@@ -49,8 +49,8 @@ templ Envs(projectName string, envVals []compose.EnvVal, err error) {
 			</tbody>
 			<tfoot>
 				<tr id="add-env-plain" class="hover:bg-gray-100">
-					<td class="px-6 py-4"><input id="env-name" x-ref="envNameInput" name="name" class="border rounded px-2 py-1 w-full"/></td>
-					<td class="px-6 py-4"><input id="env-value" x-ref="envValueInput" name="value" class="border rounded px-2 py-1 w-full"/></td>
+					<td class="px-6 py-4"><input id="env-name" x-ref="envNameInput" name="name" class="font-mono text-sm border rounded px-2 py-1 w-full" placeholder="KEY_NAME"/></td>
+					<td class="px-6 py-4"><input id="env-value" x-ref="envValueInput" name="value" class="font-mono text-sm border rounded px-2 py-1 w-full" placeholder="value"/></td>
 					<td class="px-6 py-4 whitespace-nowrap">
 						<button
 							type="button"
@@ -69,7 +69,7 @@ templ Envs(projectName string, envVals []compose.EnvVal, err error) {
 				<tr>
 					<td colspan="3">
 						<form action={ templ.SafeURL(path.Join("/ax", "project", projectName, "envs")) } method="post" x-target="project-envs">
-							<textarea id="plain_envs" name="envs" class="border rounded px-2 py-1 w-full" rows="10"></textarea>
+							<textarea id="plain_envs" name="envs" class="font-mono text-xs md:text-sm border rounded px-2 py-1 w-full" rows="10" placeholder="KEY=VALUE"></textarea>
 							<button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">add all</button>
 						</form>
 					</td>
