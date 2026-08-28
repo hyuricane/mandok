@@ -112,6 +112,9 @@ func GetStatus(projectDir string, services ...string) (map[string]ServiceStatus,
 		if v.Ports != nil {
 			for _, port := range v.Ports {
 				portsegments := []string{}
+				if port.HostIP != "" {
+					portsegments = append(portsegments, port.HostIP)
+				}
 				if port.Target != 0 {
 					portsegments = append(portsegments, strconv.Itoa(int(port.Target)))
 				}
