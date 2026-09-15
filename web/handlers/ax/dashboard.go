@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"inovasiriset.co.id/docker/manager/app/lib/compose"
 	"inovasiriset.co.id/docker/manager/conf"
 	"inovasiriset.co.id/docker/manager/web/middlewares"
+	axsComponents "inovasiriset.co.id/docker/manager/web/templates/axs/components"
 	axPages "inovasiriset.co.id/docker/manager/web/templates/axs/pages"
 	"inovasiriset.co.id/docker/manager/web/templates/components"
 )
@@ -39,6 +41,7 @@ func RouteDashboard(group *echo.Group) {
 	projectGroup.GET("/:project/service/:service/edit", editService)
 	projectGroup.GET("/:project/service-new", addService)
 	projectGroup.POST("/:project/service/:service/edit", doEditService)
+	projectGroup.PUT("/:project/service/:service/imageTag", editImageTag)
 	projectGroup.GET("/:project/service/:service/log", getLog)
 	projectGroup.POST("/:project/service", doEditService)
 
@@ -278,6 +281,48 @@ func addService(c echo.Context) error {
 		return c.Redirect(302, "/ax")
 	}
 	return axPages.Service(renderLayout, projectName, "", "", format, nil).Render(c.Request().Context(), c.Response().Writer)
+}
+
+func editImageTag(c echo.Context) error {
+	projectName := c.Param("project")
+	serviceName := c.Param("service")
+	projectDir := compose.HasProject(projectName)
+	if projectDir == "" {
+		return c.Redirect(302, "/ax")
+	}
+	imageTag := c.FormValue("imageTag")
+	if imageTag == "" {
+		return c.Redirect(302, "/ax")
+	}
+	statuses, err := compose.GetStatus(projectDir, serviceName)
+	if err != nil {
+		return err
+	}
+	serviceStatus := statuses[serviceName]
+	if serviceStatus.ImageTags != nil {
+		found := false
+		for _, tag := range serviceStatus.ImageTags {
+			if tag.Tag == imageTag {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return c.Redirect(302, "/ax")
+		}
+
+		err := compose.RollbackImageTag(filepath.Join(projectDir, "tags.env"), serviceName, imageTag)
+		if err != nil {
+			return err
+		}
+
+		statuses, err = compose.GetStatus(projectDir, serviceName)
+		if err != nil {
+			return err
+		}
+		serviceStatus = statuses[serviceName]
+	}
+	return axsComponents.StatusImageCell(projectName, serviceName, serviceStatus.Image, serviceStatus.ImageTags).Render(c.Request().Context(), c.Response().Writer)
 }
 
 func doEditService(c echo.Context) error {

@@ -3,6 +3,7 @@ package compose
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -30,15 +31,16 @@ type ExtendedPSData struct {
 }
 
 type ServiceStatus struct {
-	Name     string   `json:"Name"`
-	State    string   `json:"State"`
-	Status   string   `json:"Status"`
-	Image    string   `json:"Image"`
-	Expected int      `json:"Expected"`
-	Running  int      `json:"Running"`
-	ExitCode int      `json:"ExitCode"`
-	Route    string   `json:"Route,omitempty"`
-	Ports    []string `json:"Ports,omitempty"`
+	Name      string            `json:"Name"`
+	State     string            `json:"State"`
+	Status    string            `json:"Status"`
+	Image     string            `json:"Image"`
+	Expected  int               `json:"Expected"`
+	Running   int               `json:"Running"`
+	ExitCode  int               `json:"ExitCode"`
+	Route     string            `json:"Route,omitempty"`
+	Ports     []string          `json:"Ports,omitempty"`
+	ImageTags []ImageTagHistory `json:"ImageTags,omitempty"`
 }
 
 func GetStatus(projectDir string, services ...string) (map[string]ServiceStatus, error) {
@@ -107,6 +109,10 @@ func GetStatus(projectDir string, services ...string) (map[string]ServiceStatus,
 	if err != nil {
 		return nil, err
 	}
+	tags, err := ListImageTags(filepath.Join(project.WorkingDir, "tags.env"))
+	if err != nil {
+		return nil, err
+	}
 	for k, v := range project.Services {
 		ports := []string{}
 		if v.Ports != nil {
@@ -130,9 +136,10 @@ func GetStatus(projectDir string, services ...string) (map[string]ServiceStatus,
 			}
 		}
 		ss := ServiceStatus{
-			Name:  v.Name,
-			Image: v.Image,
-			Ports: ports,
+			Name:      v.Name,
+			Image:     v.Image,
+			Ports:     ports,
+			ImageTags: tags[v.Name],
 		}
 		if v.Deploy != nil && v.Deploy.Replicas != nil {
 			ss.Expected = int(*v.Deploy.Replicas)

@@ -7,6 +7,8 @@ import (
 	"sort"
 
 	twmerge "github.com/Oudwins/tailwind-merge-go"
+	"strings"
+	"time"
 )
 
 type ActionButton struct {
@@ -198,6 +200,11 @@ templ Statuses(projectName string, projectStats map[string]compose.ServiceStatus
 			<tbody class="bg-white divide-y divide-gray-200">
 				for i, v := range projectStatsArr {
 					{{
+						tagIndex := strings.LastIndex(v.Image, ":")
+						imageTag := "latest"
+						if tagIndex > 0 {
+							imageTag = v.Image[tagIndex+1:]
+						}
 						popupPosition := "origin-top-right absolute right-0 mt-2"
 						if len(projectStatsArr)/2 < i {
 							popupPosition = "origin-bottom-right absolute right-0 mt-2"
@@ -205,7 +212,22 @@ templ Statuses(projectName string, projectStats map[string]compose.ServiceStatus
 					}}
 					<tr id={ fmt.Sprintf("project-status-%s", v.Name) } class="hover:bg-gray-100">
 						<td class="px-6 py-2 whitespace-nowrap">{ v.Name }</td>
-						<td class="px-6 py-2 break-all">{ v.Image }</td>
+						<td class="px-6 py-2 break-all" id={ fmt.Sprintf("project-status-%s-%s", v.Name, "image") }>
+							<span class="text-sm font-medium">{ v.Image }</span>
+							if len(v.ImageTags) > 0 {
+								<form x-target={ fmt.Sprintf("project-status-%s-%s", v.Name, "image") } action={ templ.SafeURL(path.Join("/ax", "project", projectName, "service", v.Name, "imageTag")) } method="put">
+									<select name="imageTag" class="text-xs text-gray-500" onchange="this.form.requestSubmit()">
+										for _, tag := range v.ImageTags {
+											if tag.Tag == imageTag {
+												<option value={ tag.Tag } selected={ tag.Tag == imageTag } >{ tag.Created.Format(time.DateTime) }: { tag.Tag }</option>
+											} else {
+												<option value={ tag.Tag } >{ tag.Created.Format(time.DateTime) }: { tag.Tag }</option>
+											}
+										}
+									</select>
+								</form>
+							}
+						</td>
 						<td class="px-6 py-2 whitespace-nowrap">{ fmt.Sprintf("%d/%d", v.Running, v.Expected) }  </td>
 						<td class="px-6 py-2 whitespace-nowrap">
 							<div class="flex flex-col">
@@ -277,4 +299,31 @@ templ Statuses(projectName string, projectStats map[string]compose.ServiceStatus
 			</tfoot>
 		</table>
 	</div>
+}
+
+templ StatusImageCell(projectName, serviceName, image string, imageTags []compose.ImageTagHistory) {
+	{{
+		tagIndex := strings.LastIndex(image, ":")
+		imageTag := "latest"
+		if tagIndex > 0 {
+			imageTag = image[tagIndex+1:]
+		}
+	}}
+
+	<td class="px-6 py-2 break-all" id={ fmt.Sprintf("project-status-%s-%s", serviceName, "image") }>
+		<span class="text-sm font-medium">{ image }</span>
+		if len(imageTags) > 0 {
+			<form x-target={ fmt.Sprintf("project-status-%s-%s", serviceName, "image") } action={ templ.SafeURL(path.Join("/ax", "project", projectName, "service", serviceName, "imageTag")) } method="put">
+				<select name="imageTag" class="text-xs text-gray-500" onchange="this.form.requestSubmit()">
+					for _, tag := range imageTags {
+						if tag.Tag == imageTag {
+							<option value={ tag.Tag } selected={ tag.Tag == imageTag } >{ tag.Created.Format(time.DateTime) }: { tag.Tag }</option>
+						} else {
+							<option value={ tag.Tag } >{ tag.Created.Format(time.DateTime) }: { tag.Tag }</option>
+						}
+					}
+				</select>
+			</form>
+		}
+	</td>
 }

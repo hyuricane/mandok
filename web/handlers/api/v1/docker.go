@@ -4,13 +4,11 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
@@ -318,7 +316,7 @@ func RestartContainer(c echo.Context) error {
 			})
 		}
 		if c.Request().Header.Get("X-Image-Tag") != "" {
-			err = updateImageTagEnv(filepath.Join(workdir, "tags.env"), containerName, c.Request().Header.Get("X-Image-Tag"))
+			err = compose.UpdateImageTagEnv(filepath.Join(workdir, "tags.env"), containerName, c.Request().Header.Get("X-Image-Tag"))
 			if err != nil {
 				log.Printf("[ERROR] update image tag error: %v", err)
 				return err
@@ -363,49 +361,6 @@ func getContainers(projectName string, containerName string) ([]container.Summar
 
 func restartContainer(workdir string, containerName string) error {
 	return compose.StartProject(workdir, true, true, containerName)
-}
-
-func updateImageTagEnv(envPath string, containerName string, imageTag string) error {
-	// Append timestamped image tag update to tags.env file
-	timestamp := time.Now().Format("2006-01-02 15:04:05")
-	envLine := fmt.Sprintf("# Updated %s\nIMAGE_TAG_%s=%s\n",
-		timestamp,
-		containerName,
-		imageTag)
-	var err error
-
-	// Append to .env file (creates if doesn't exist)
-	if _, err = os.Stat(envPath); err != nil && !os.IsNotExist(err) {
-		log.Printf("[ERROR] failed to write .env file: %v", err)
-		return err
-	}
-
-	// If file didn't exist, this creates it. If it did, we need to append
-	if os.IsNotExist(err) {
-		if err := os.WriteFile(envPath, []byte(envLine), 0o644); err != nil {
-			log.Printf("[ERROR] failed to create .env file: %v", err)
-			return err
-		}
-	} else {
-		// File exists, append to it
-		f, err := os.OpenFile(envPath, os.O_APPEND|os.O_WRONLY, 0o644)
-		if err != nil {
-			log.Printf("[ERROR] failed to open .env for append: %v", err)
-			return err
-		}
-		defer f.Close()
-
-		if _, err := f.WriteString(envLine + "\n"); err != nil {
-			log.Printf("[ERROR] failed to append to .env: %v", err)
-			return err
-		}
-	}
-
-	log.Printf("[INFO] Appended to .env: IMAGE_TAG_%s=%s at %s",
-		containerName,
-		imageTag,
-		timestamp)
-	return nil
 }
 
 func cleanEnvVars() []string {
