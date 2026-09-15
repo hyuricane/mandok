@@ -318,6 +318,7 @@ templ StatusImageCell(projectName, serviceName, image string, imageTags []compos
 			}
 			if len(imageTags) > 0 {
 				<form
+					x-data={ fmt.Sprintf("{ currentTag: '%s' }", imageTag) }
 					x-target={ fmt.Sprintf("project-status-%s-%s", serviceName, "image") }
 					action={ templ.SafeURL(path.Join("/ax", "project", projectName, "service", serviceName, "imageTag")) }
 					method="put"
@@ -327,7 +328,7 @@ templ StatusImageCell(projectName, serviceName, image string, imageTags []compos
 						<select
 							name="imageTag"
 							class="w-full appearance-none rounded border border-gray-300 bg-white py-1 pl-2 pr-7 font-mono text-xs text-gray-700 shadow-sm transition hover:border-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
-							onchange="this.form.requestSubmit()"
+							@change={ fmt.Sprintf("if ($el.value === currentTag) return; if (!confirm('Change image tag for %s to ' + $el.value + '?')) { $el.value = currentTag; return; } $el.form.requestSubmit()", serviceName) }
 							title="Switch image tag"
 						>
 							if !hasCurrentTag && imageTag != "" {
