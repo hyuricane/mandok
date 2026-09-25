@@ -2,7 +2,9 @@ package compose
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"net/url"
 
 	cerrdefs "github.com/containerd/errdefs"
 	"github.com/docker/compose/v2/pkg/api"
@@ -170,9 +172,32 @@ func ImageNeedPull(ctx context.Context, imageName string, forcePull bool) (bool,
 // }
 
 func PullImage(ctx context.Context, ref string) error {
-	reader, err := _dockerClient.ImagePull(ctx, ref, image.PullOptions{})
+	var err error
+	var reader io.ReadCloser
+	// try no auth
+	reader, err = _dockerClient.ImagePull(ctx, ref, image.PullOptions{})
 	if err != nil {
-		return err
+		// if err is unauthorized try with auths
+		imageUrl, urlErr := url.ParseRequestURI(ref)
+		if urlErr != nil {
+			return err
+		}
+
+		// try with auths
+		if auths := registryAuthsFromEnv(imageUrl.Host); len(auths) > 0 {
+			for _, auth := range auths {
+				reader, err = _dockerClient.ImagePull(ctx, ref, image.PullOptions{
+					RegistryAuth: fmt.Sprintf("%s:%s@%s", auth.Username, auth.Password, auth.ServerAddress),
+				})
+				if err == nil {
+					defer reader.Close()
+					return nil
+				}
+			}
+		}
+		if err != nil {
+			return err
+		}
 	}
 	defer reader.Close()
 	_, err = io.Copy(io.Discard, reader) // consume stream until EOF

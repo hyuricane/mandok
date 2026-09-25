@@ -78,7 +78,7 @@ func getAPI() api.Compose {
 	return *_composeApi
 }
 
-func registryAuthsFromEnv() []registry.AuthConfig {
+func registryAuthsFromEnv(servers ...string) []registry.AuthConfig {
 	// username:password@registryhost,...
 	registryAuth := conf.AppConfig.RegistryAuths
 	registryAuths := strings.Split(registryAuth, ",")
@@ -91,6 +91,18 @@ func registryAuthsFromEnv() []registry.AuthConfig {
 		auth := strings.Split(registryAuth[0], ":")
 		if len(auth) != 2 {
 			continue
+		}
+		if len(servers) > 0 {
+			found := false
+			for _, server := range servers {
+				if registryAuth[1] != server {
+					continue
+				}
+				found = true
+			}
+			if !found {
+				continue
+			}
 		}
 		auths = append(auths, registry.AuthConfig{
 			Username:      auth[0],
