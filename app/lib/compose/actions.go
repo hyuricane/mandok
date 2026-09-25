@@ -2,13 +2,14 @@ package compose
 
 import (
 	"context"
-	"fmt"
 	"io"
-	"net/url"
 
 	cerrdefs "github.com/containerd/errdefs"
+	"github.com/distribution/reference"
 	"github.com/docker/compose/v2/pkg/api"
 	"github.com/docker/docker/api/types/image"
+	"github.com/docker/docker/api/types/registry"
+	"github.com/labstack/gommon/log"
 )
 
 // type ImagePullProgress struct {
@@ -178,16 +179,19 @@ func PullImage(ctx context.Context, ref string) error {
 	reader, err = _dockerClient.ImagePull(ctx, ref, image.PullOptions{})
 	if err != nil {
 		// if err is unauthorized try with auths
-		imageUrl, urlErr := url.ParseRequestURI(ref)
-		if urlErr != nil {
+		parsedRef, refErr := reference.ParseNamed(ref)
+		if refErr != nil {
+			log.Printf("[DEBUG] urlErr: %v", refErr)
 			return err
 		}
 
+		registryHost := reference.Domain(parsedRef)
 		// try with auths
-		if auths := registryAuthsFromEnv(imageUrl.Host); len(auths) > 0 {
+		if auths := registryAuthsFromEnv(registryHost); len(auths) > 0 {
 			for _, auth := range auths {
+				registryAuth, err := registry.EncodeAuthConfig(auth)
 				reader, err = _dockerClient.ImagePull(ctx, ref, image.PullOptions{
-					RegistryAuth: fmt.Sprintf("%s:%s@%s", auth.Username, auth.Password, auth.ServerAddress),
+					RegistryAuth: registryAuth,
 				})
 				if err == nil {
 					defer reader.Close()
