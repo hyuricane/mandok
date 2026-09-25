@@ -50,11 +50,11 @@ func processTasks() {
 		select {
 		case pr := <-pullCh:
 			if err := _handlePull(pr); err != nil {
-				log.Error("[ERROR] image pull", pr)
+				log.Error("[ERROR] image pull", pr, err)
 			}
 		case upr := <-upCh:
 			if err := _handleUp(upr); err != nil {
-				log.Error("[ERROR] up", upr, upRequests[upr])
+				log.Error("[ERROR] up", upr, upRequests[upr], err)
 			}
 		}
 	}
